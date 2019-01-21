@@ -1,0 +1,39 @@
+Dimple version 0.07 release notes
+==================================
+
+Significant New Features Since v0.06
+------------------------------------
+- DimpleApplet and Javascript API to enable use of Dimple from browser-based
+Javascript applications.
+
+- New option mechanism used for configuring solver options.
+
+- New com.analog.lyric.options package supports type-safe hierarchical options.
+
+- DimpleEnvironment provides some facilities that can be shared among multiple graphs, including a logging interface.
+
+- Added built-in factors to convert between vectors of Real variables and RealJoint or Complex variables (ComplexToRealAndImaginary, RealAndImaginaryToComplex, RealJointProjection, RealJointToRealVector, RealVectorToRealJoint).
+
+- Added built-in factor for complex absolute value (ComplexAbs), and associated use of overloaded abs() method in MATLAB API.
+
+- Modified API for custom Java FactorFunctions, now requiring use of evalEnergy(Value[]) method instead of the other variants; and for deterministic directed FactorFunctions, evalDeterministic now takes a Value array argument instead of an Object array.
+
+- Added methods for the Gibbs solver to determine the rejection rate when using Metropolis-Hastings and related samplers.
+
+- Added methods for Real and RealJoint variables in the Gibbs solver to determine the sample mean and (co)variance.
+
+- Added If factor creation utility in MATLAB API to simplify conditional assignment factor creation.
+
+- Refactoring in Java API including:
+  - VariableBase supplanted by Variable
+  - Solver-specific objects now have solver specific names (e.g. GibbsReal instead of SRealVariable)
+
+Significant Bug Fixes Since v0.06
+---------------------------------
+- Fixed problem with gradle builds when git is not available or source tree is not a git clone.
+
+
+Optimizations
+--------------
+- Domains and JointDomainIndexer objects in Java are now interned on creation to avoid creation of multiple equivalent instances.
+

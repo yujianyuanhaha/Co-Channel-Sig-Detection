@@ -1,0 +1,38 @@
+testDimple had errors. 247 of 251 tests passed, 4 failed
+
+===== Test Case Failure =====
+Location: /Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoDemos/testDemos.m
+Name:     testDemos
+
+/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoDemos/testDemos.m at <a href="matlab: opentoline('/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoDemos/testDemos.m',43)">line 43</a>
+
+Unable to read file '6bitgolden'. No such file or directory.
+
+
+===== Test Case Failure =====
+Location: /Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSum.m
+Name:     testMinSum
+
+/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSum.m at <a href="matlab: opentoline('/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSum.m',50)">line 50</a>
+
+Unable to read file 'javaMaxProduct8x8.mat'. No such file or directory.
+
+
+===== Test Case Failure =====
+Location: /Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSumMultithreaded.m
+Name:     testMinSumMultithreaded
+
+/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSumMultithreaded.m at <a href="matlab: opentoline('/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMinSum/testMinSumMultithreaded.m',52)">line 52</a>
+
+Unable to read file 'javaMaxProduct8x8.mat'. No such file or directory.
+
+
+===== Test Case Failure =====
+Location: /Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMultithreading/testSaveDependencyGraph.m
+Name:     testSaveDependencyGraph
+
+/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMultithreading/compareFiles.m at <a href="matlab: opentoline('/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMultithreading/compareFiles.m',27)">line 27</a>
+/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMultithreading/testSaveDependencyGraph.m at <a href="matlab: opentoline('/Volumes/GoogleDrive/My Drive/1 Lab/Daniel/modelers/matlab/tests/algoMultithreading/testSaveDependencyGraph.m',28)">line 28</a>
+
+Invalid file identifier. Use fopen to generate a valid file identifier.
+

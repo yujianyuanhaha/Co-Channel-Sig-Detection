@@ -1,0 +1,11 @@
+testDimple had errors. 243 of 244 tests passed, 1 failed
+
+===== Test Case Failure =====
+Location: d:\ws\dimple\modelers\matlab\tests\algoGibbs\testIncrementalUpdates.m
+Name:     testIncrementalUpdates
+
+d:\ws\dimple\modelers\matlab\tests\algoGibbs\testIncrementalUpdates.m at <a href="matlab: opentoline('d:\ws\dimple\modelers\matlab\tests\algoGibbs\testIncrementalUpdates.m',46)">line 46</a>
+d:\ws\dimple\modelers\matlab\tests\algoGibbs\testIncrementalUpdates.m at <a href="matlab: opentoline('d:\ws\dimple\modelers\matlab\tests\algoGibbs\testIncrementalUpdates.m',16)">line 16</a>
+
+Assertion failed.
+
