@@ -47,3 +47,7 @@ However, matlab got its own java version, that may not be same as operation syst
     1. export external java path e.g. `export MATLAB_JAVA=/Library/Java/JavaVirtualMachines/jdk1.7.0_40.jdk/Contents/Home/jre/`  
     2. launch matlab from terminal e.g. `cd /Applications/MATLAB_R2015a.app/bin/`, `./matlab`
     3. test the hellow word example as above.
+
+
+# bibliography
+refer to [bib](https://github.com/yujianyuanhaha/Daniel2/blob/master/README_bib.md) page.  

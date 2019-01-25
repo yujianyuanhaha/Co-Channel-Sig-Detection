@@ -11,7 +11,7 @@ clc
 
 % Set number of simulations to run before saving data
 data_storage_interval = 250;
-data_storage_total = 1e5;
+data_storage_total = 1e3;
 
 % Set number of frame errors to detect before ending simulation
 numFrameErrors = 200;
