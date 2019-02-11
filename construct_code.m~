@@ -16,8 +16,7 @@ demod = createdemodulator(paramtr.numSymbols,user.M);
 % Create main graph
 fg = FactorGraph();
 
-% FactorGraph - expired class type?  -> call third party tool now; adorable
-% work of Daniel & Christopher
+% FactorGraph - expired class type?  -> call third party tool now
 
 
 % b_fg = Bit(1,numBits);
