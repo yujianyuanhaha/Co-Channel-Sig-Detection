@@ -41,13 +41,14 @@ dt = 1/4000;  %  min time step - todo
 t = 1:length(y2);
 
 y3 = real( y2' .* exp(1j*wc*t*dt) );
-y3 = normalize(y3);  % norm
+y3 = norm(y3);  % norm
 
 
 
 % ===== additive nbi signal (on the channel) ====
+w_nbi = 2*pi* 700;  % fs = 40000
 A_nbi = 1.0;
-nbi = A_nbi * cos(wc*t);
+nbi = A_nbi * cos(w_nbi*t);
 
 % noise
 std = 1e-3;
@@ -55,6 +56,10 @@ n = std * rand(1, length(y2));
 
 % received signal
 r = y3 + nbi + n;
+
+
+
+
 
 % == todo demodulate ==
 
