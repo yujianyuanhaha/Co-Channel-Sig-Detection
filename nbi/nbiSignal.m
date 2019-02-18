@@ -1,4 +1,5 @@
 clear all;
+close all;
 
 % create Signal of Interest(SoI)
 
@@ -41,7 +42,7 @@ dt = 1/4000;  %  min time step - todo
 t = 1:length(y2);
 
 y3 = real( y2' .* exp(1j*wc*t*dt) );
-y3 = norm(y3);  % norm
+%y3 = norm(y3);  % norm
 
 
 
@@ -51,11 +52,17 @@ A_nbi = 1.0;
 nbi = A_nbi * cos(w_nbi*t);
 
 % noise
-std = 1e-3;
-n = std * rand(1, length(y2));
+std = 1e-1;
+n = std * randn(1, length(y2));
 
 % received signal
 r = y3 + nbi + n;
+
+% plot
+figure;
+plot(abs(fftshift(fft(y3))));
+figure;
+plot(abs(fftshift(fft(r))));
 
 
 
