@@ -3,7 +3,13 @@ Author: Jianyuan (Jet) Yu
 Contact: jianyuan@vt.edu  
 
 
+# Files
+* `nbiMain.m` - main file
+* `fftThre.m`, `kayEst`, `trainNF`
+
+
 # Updates
+* (20th Feb) fftThre, Kay, TrainNF implemented 
 * (17th Feb)
 
 # Overview
@@ -38,5 +44,5 @@ Contact: jianyuan@vt.edu
 
 
 
-# Files
+# Related Files
 [data sheet (Google Doc)](https://docs.google.com/document/d/1dULYCHmw7NCb9Pp9SOaIqyIlrDgNPNYFvnaRa6fGYws/edit?usp=sharing)
