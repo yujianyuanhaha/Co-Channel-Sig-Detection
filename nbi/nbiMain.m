@@ -30,14 +30,11 @@ p     = rcosdesign(beta,span,sps,shape);
 
 
 
-x_mod = [x_mod, zeros(1,(sps-1)*span)];
-x_mod = reshape(x_mod, [])
-% upsampled = upsample( x_mod, sps);  % 8000
-% upsampled = [ zeros(1,sps*span), upsampled ];  % 8016
-temp = conv(upsampled, p);  % 8016+17-1=8032
-%temp = temp(17:end);
 
-x_ps = temp(18:end-15);        % to be fixed
+upsampled = upsample( x_mod, sps);  % 8000
+upsampled = [ zeros(1,sps*span/2), upsampled ];  % 8016
+temp = conv(upsampled, p);  % 8016+17-1=8032
+x_ps = temp(18:end-7);        % to be fixed
  
 %==== [skipped single carrier upgrade] ==============
 fs = 10000;  % sample rate
