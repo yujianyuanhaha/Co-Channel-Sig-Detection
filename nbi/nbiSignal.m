@@ -1,78 +1,83 @@
-clear all;
-close all;
-
 % create Signal of Interest(SoI)
+% BPSK Mod + Pulse Shaping(RC)
 
-% QPSK Mod + Pulse Shaping(RC)
+% opt   = 'fftThr';
+opt   = 'kayEst'
+% opt   = 'fftThr';
 
-Nb = 1000;  % num of bits
-xb = randi([0,1],[1,Nb]);
+Nb    = 2000;  % num of bits
+xb    = sign(randn([1,Nb]));  % BPSK
+x_mod = xb;
 
-% ======= QPSK(offset) Mod ============================
-Ns = Nb/2; % num of symbol
-M = 4;
-y1 = zeros(1,1000/2);
-for k = 1:Ns
-    d = 2^xb(2*k-1) + xb(2*k);
-    y1(k) = exp(1j*(2*pi*d/M + pi/4));   % offset
+% ========= pulse shape (RC Raised Cosine)  ====
+sps   = 4;    % sample per symbol
+span  = 4;    % duration
+beta  = 0.25;
+shape = 'sqrt';
+p     = rcosdesign(beta,span,sps,shape);
+rCosSpec =  fdesign.pulseshaping(sps,'Raised Cosine',...
+    'Nsym,Beta',span,0.25);
+rCosFlt = design ( rCosSpec );
+rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
+upsampled = upsample( x_mod, sps); % upsample
+FltDelay = (span*sps)/2;           % shift
+temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
+x_ps = temp(9:end);        % to be fixed
+ 
+%==== [skipped single carrier upgrade] ==============
+fs = 10000;  % sample rate
+dt = 1/fs;  %  min time step duration 
+t  = 1:Nb*sps;
+
+%====== additive nbi signal (on the channel) ====
+f_nbi = 750;
+w_nbi = 2*pi*f_nbi;  %
+A_nbi = 10.0;
+phi_nbi = 0.4*pi;
+nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
+
+% ==== additive white noise ====
+std = 1e-2;
+n = std * randn(1, Nb*sps);
+
+rx = x_ps + nbi + n;  % received signal
+
+%==== [skipped single carrier downgrade] ==============
+% x_down = 2 * demod(x_up,fc,fs);
+
+% ==== [skipped matching filter] ==========
+% R = conv(rx,p);
+% R = R(18:end);
+
+% downsample for pulse shape
+x_ds = downsample(rx, sps);
+
+
+% ==== narrowband mitigation ==========
+if opt == 'fftThr'
+    % === method 1: fft threshold
+    threshold = max(abs(fft(x_ps)));
+    x_end = fftThr(x_ds, threshold);
+elseif opt == 'trainNF'
+    % === method 2: trained notch filter ========     
+%      x_end = trainNF(trainInput, trainOutput, testInput, FirOrder);
+elseif opt == 'kayEst'
+    % === method 3: Kay Estimation ==========
+    f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
+    X = fft(x_ds);
+    location = f_h/fs*length(x_ds)/2;
+    X(location) = 1/2*( X(location-1)+X(location+1) ); % smooth
+    X(length(X)-location) = 1/2*( X(length(X)-location-1)...
+                               +X(length(X)-location+1) );
+    x_end = real(ifft(X));
+else
+    disp('wrong opt, choose among fftThr,trainNF,kayEst');
 end
 
-% ========= pulse shape (RC Raised Cosine)  ============================
-% b = rcosdesign(beta,span,sps,shape)
-beta  = 0.50;
-span  = 4;   % num of symbos
-sps   = 3;   % bit per symbol     
-shape = 'sqrt';
-p = rcosdesign(beta,span,sps,shape);   % of size 13
-% tricky
-L = length(y1);
-z = reshape([y1;zeros(span-1,L)],  [span*L,1]);
-z = [zeros(span*sps,1);z];
-y2 = conv(z,p);
-y2 = y2(length(p)+1:end);
+% ======= evaluation ======
+x_h = sign(x_end);   % BPSK dector
+BER = sum(xb ~= x_h)/Nb
 
-% ==== single carrier ================================
-% complex envelop
-fc = 1E4;
-wc = 2*pi*fc; % carrier frequency
-
-Nt = 4000;    % total num of time step
-dt = 1/4000;  %  min time step - todo
-
-t = 1:length(y2);
-
-y3 = real( y2' .* exp(1j*wc*t*dt) );
-%y3 = norm(y3);  % norm
-
-
-
-% ===== additive nbi signal (on the channel) ====
-w_nbi = 2*pi* 700;  % fs = 40000
-A_nbi = 1.0;
-nbi = A_nbi * cos(w_nbi*t);
-
-% noise
-std = 1e-1;
-n = std * randn(1, length(y2));
-
-% received signal
-r = y3 + nbi + n;
-
-% plot
-figure;
-plot(abs(fftshift(fft(y3))));
-figure;
-plot(abs(fftshift(fft(r))));
-
-
-
-
-
-% == todo demodulate ==
-
-
-
-% == metric: bit error rate ===
 
 
 

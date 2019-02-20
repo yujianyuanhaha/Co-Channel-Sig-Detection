@@ -1,0 +1,10 @@
+x = ones(10,1);
+b = x(end:-1:1);
+y = filter(b,1,x);
+% y = filter(b,a,x) filters the input data x using a rational transfer function defined 
+% by the numerator and denominator coefficients b and a.
+
+
+% == 
+% 1. fix match filter - HARD, GO AHEAD
+% 2. fix 
