@@ -3,7 +3,7 @@
 
 % opt   = 'fftThr';
 opt   = 'kayEst'
-% opt   = 'fftThr';
+
 
 Nb    = 2000;  % num of bits
 xb    = sign(randn([1,Nb]));  % BPSK
@@ -30,14 +30,14 @@ dt = 1/fs;  %  min time step duration
 t  = 1:Nb*sps;
 
 %====== additive nbi signal (on the channel) ====
-f_nbi = 750;
+f_nbi = 770;
 w_nbi = 2*pi*f_nbi;  %
 A_nbi = 10.0;
-phi_nbi = 0.4*pi;
+phi_nbi = 0.0*pi;
 nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
 
 % ==== additive white noise ====
-std = 1e-2;
+std = 10;
 n = std * randn(1, Nb*sps);
 
 rx = x_ps + nbi + n;  % received signal
@@ -58,20 +58,15 @@ if opt == 'fftThr'
     % === method 1: fft threshold
     threshold = max(abs(fft(x_ps)));
     x_end = fftThr(x_ds, threshold);
-elseif opt == 'trainNF'
-    % === method 2: trained notch filter ========     
-%      x_end = trainNF(trainInput, trainOutput, testInput, FirOrder);
+
 elseif opt == 'kayEst'
-    % === method 3: Kay Estimation ==========
+    % === method 2: Kay Estimation ==========
     f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
-    X = fft(x_ds);
-    location = f_h/fs*length(x_ds)/2;
-    X(location) = 1/2*( X(location-1)+X(location+1) ); % smooth
-    X(length(X)-location) = 1/2*( X(length(X)-location-1)...
-                               +X(length(X)-location+1) );
-    x_end = real(ifft(X));
+    t  = 1:sps:Nb*sps;    
+    x_end = x_ds - A_nbi * cos(f_h*2*pi*t*dt);  % assume A_nbi known, phase known
+
 else
-    disp('wrong opt, choose among fftThr,trainNF,kayEst');
+    disp('wrong opt, choose among fftThr, kayEst');
 end
 
 % ======= evaluation ======

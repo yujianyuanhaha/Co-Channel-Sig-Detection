@@ -1,22 +1,9 @@
-function output = trainNF(trainInput, trainOutput, testInput, FirOrder)
+function h = trainNF(trainInput, trainOutput, FirOrder)
 
-[M,Ni] = size(trainInput);
-[~,No] = size(trainOnput);
-coef = size(M,FirOrder);
-for i = 1:M
-    in = trainInput(i,:);
-    in = [in, zeros(1,No-Ni)];
-    out = trainOnput(i,:);
+    trainInput = [trainInput, ...
+        zeros(1,length(trainOutput)-length(trainInput))];  % pad with zeros
     temp = ifft(fft(out)./fft(in));
-    coef(i,:)  = temp(1:FirOrder);    
-end
-
-    h = mean(coef,1);
-    temp = conv(testInput,h);
-    output = 
-
-    
-
+    h  = temp(1:FirOrder);
 
 
 end

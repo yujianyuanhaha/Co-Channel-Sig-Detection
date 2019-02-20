@@ -1,0 +1,83 @@
+% create Signal of Interest(SoI)
+% BPSK Mod + Pulse Shaping(RC)
+
+% opt   = 'fftThr';
+opt   = 'trainNF'
+% opt   = 'fftThr';
+
+M = 20; % num of train
+Nb    = 2000;  % num of bits
+xb    = sign(randn([M+1,Nb]));  % BPSK
+trainInLen = 200;
+trainOutLen = 400;
+FirOrder = 100;
+H = zeros(M,FirOrder);
+% the last row for test
+
+
+for i = 1:M
+    
+    x_mod = xb(i,:);
+    
+    % ========= pulse shape (RC Raised Cosine)  ====
+    sps   = 4;    % sample per symbol
+    span  = 4;    % duration
+    beta  = 0.25;
+    shape = 'sqrt';
+    p     = rcosdesign(beta,span,sps,shape);
+    rCosSpec =  fdesign.pulseshaping(sps,'Raised Cosine',...
+        'Nsym,Beta',span,0.25);
+    rCosFlt = design ( rCosSpec );
+    rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
+    upsampled = upsample( x_mod, sps); % upsample
+    FltDelay = (span*sps)/2;           % shift
+    temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
+    x_ps = temp(9:end);        % to be fixed
+    
+    %==== [skipped single carrier upgrade] ==============
+    fs = 10000;  % sample rate
+    dt = 1/fs;  %  min time step duration
+    t  = 1:Nb*sps;
+    
+    %====== additive nbi signal (on the channel) ====
+    f_nbi = 770;
+    w_nbi = 2*pi*f_nbi;  %
+    A_nbi = 10.0;
+    phi_nbi = 0.0*pi;
+    nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
+    
+    % ==== additive white noise ====
+    std = 10;
+    n = std * randn(1, Nb*sps);
+    
+    rx = x_ps + nbi + n;  % received signal
+    
+    %==== [skipped single carrier downgrade] ==============
+    % x_down = 2 * demod(x_up,fc,fs);
+    
+    % ==== [skipped matching filter] ==========
+    % R = conv(rx,p);
+    % R = R(18:end);
+    
+    % downsample for pulse shape
+    x_ds = downsample(rx, sps);
+    x
+    
+    
+    % ==== training of narrowband mitigation ==========
+    h = trainNF(x_ds, x_ps, FirOrder)
+    
+    
+    
+    
+end
+
+% ======= evaluation ======
+x_h = sign(x_end);   % BPSK dector
+BER = sum(xb ~= x_h)/Nb
+
+
+
+
+
+

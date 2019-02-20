@@ -14,5 +14,5 @@ function f = kayEst(s,fs)
     sum2 = sum2/N;
 
     f = acos(sum1/sum2)/(2*pi)*fs;
-    f = round(f/10)*10;   % 10Hz resolution
+    f = round(f/5)*5;   % 10Hz resolution
 end
