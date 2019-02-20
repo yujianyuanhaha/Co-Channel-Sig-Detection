@@ -28,12 +28,8 @@ p     = rcosdesign(beta,span,sps,shape);
 % FltDelay = (span*sps)/2;           % shift
 % temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
 
-
-
-x_mod = [x_mod, zeros(1,(sps-1)*span)];
-x_mod = reshape(x_mod, [])
-% upsampled = upsample( x_mod, sps);  % 8000
-% upsampled = [ zeros(1,sps*span), upsampled ];  % 8016
+upsampled = upsample( x_mod, sps);  % 8000
+upsampled = [ zeros(1,sps*span), upsampled ];  % 8016
 temp = conv(upsampled, p);  % 8016+17-1=8032
 %temp = temp(17:end);
 

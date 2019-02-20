@@ -29,7 +29,7 @@ for i = 1:3
     x_pad    = [x(i,:), zeros(1, Lz-Lx)];
     tempF    = fft(z(i,:))./fft(x_pad);
     temp     = ifft(tempF); % truncate at final step 
-    y_h(i,:) = temp(1:Ly);
+    y_h(i,:) = temp(1:Ly)
     
    % y_h2(i,:)= (ones(1,12))./(ones(1,12)./y_h(i,:)+std); % bug like 
    % mmse
@@ -38,7 +38,7 @@ for i = 1:3
        tempF2(j)= 1/(1/tempF(j)+ N0);
    end
    temp = ifft(tempF2); 
-   y_h2(i,:) = temp(1:Ly);
+   y_h2(i,:) = temp(1:Ly)
     
 end
 

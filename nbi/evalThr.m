@@ -4,22 +4,24 @@
 close all;
 clear all;
 
-opt   = 'trainNF'
+
+SNR = zeros(1,10);
+BER = zeros(1,10);
+BERi = zeros(1,10);
 
 
-M  = 10; % num of train
-Nb = 2000;  % num of bits
-xb = sign(randn([M+1,Nb]));  % BPSK
-trainInLen = 40;
-trainOutLen = 80;
-FirOrder = 20;
-H = zeros(M,FirOrder);
-% the last row for test
-
-
-for i = 1:M+1
+for i = 1:10
     
-    x_mod = xb(i,:);
+    std = 10^(-8+i);
+    SNR(i) = 10*log(1/std)/log(10);
+    
+    opt   = 'fftThr';
+    % opt   = 'kayEst'
+    
+    
+    Nb    = 2000;  % num of bits
+    xb    = sign(randn([1,Nb]));  % BPSK
+    x_mod = xb;
     
     % ========= pulse shape (RC Raised Cosine)  ====
     sps   = 4;    % sample per symbol
@@ -42,13 +44,14 @@ for i = 1:M+1
     t  = 1:Nb*sps;
     
     %====== additive nbi signal (on the channel) ====
-    f_nbi = 770;   
+    f_nbi = 770;
+    w_nbi = 2*pi*f_nbi;  %
     A_nbi = 10.0;
     phi_nbi = 0.0*pi;
-    nbi = A_nbi * cos( 2*pi*f_nbi*t*dt + phi_nbi);
+    nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
     
     % ==== additive white noise ====
-    std = 0.001;
+%     std = 0.001;
     n = std * randn(1, Nb*sps);
     
     rx = x_ps + nbi + n;  % received signal
@@ -62,29 +65,34 @@ for i = 1:M+1
     
     % downsample for pulse shape
     x_ds = downsample(rx, sps);
-    out  = x_ds(1:trainOutLen);
-    temp = downsample(x_ps, sps);  % preknown
-    in   = temp(1:trainInLen);
     
-    % ==== training of narrowband mitigation ==========
-    if i <= M
-        H(i,:) = trainNF(in, out, FirOrder);
+    
+    % ==== narrowband mitigation ==========
+    if opt == 'fftThr'
+        % === method 1: fft threshold
+        threshold =  2 * max(abs(fft(p)));
+        x_end = fftThr(x_ds, threshold);
         
+    elseif opt == 'kayEst'
+        % === method 2: Kay Estimation ==========
+        f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
+        t  = 1:sps:Nb*sps;
+        x_end = x_ds - A_nbi * cos(f_h*2*pi*t*dt);  % assume A_nbi known, phase known
+        
+    else
+        disp('wrong opt, choose among fftThr, kayEst');
     end
-              
+    
+    % ======= evaluation ======
+    x_h = sign(x_end);   % BPSK dector
+    BER(i) = sum(xb ~= x_h)/Nb;
+    
+    BERi(i) = qfunc(sqrt(2*1/std));
+    
 end
 
-h = mean(H,1);
-temp = conv(x_ds,h);
-x_end = temp(1:length(x_ds));
-
-
-% ======= evaluation ======
-x_h = sign(x_end);   % BPSK dector
-BER = sum(xb(M+1,:) ~= x_h)/Nb
-
-
-
+BER
+BERi
 
 
 

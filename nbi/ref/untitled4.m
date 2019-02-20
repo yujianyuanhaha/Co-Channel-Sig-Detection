@@ -1,5 +1,7 @@
 % https://www.unilim.fr/pages_perso/vahid/notes/matlab_pulseShaping.html
 
+clear all;
+
 xb = [1 0 1 0 1 1 0 0 0 1 1 0];
 rCosSpec =  fdesign.pulseshaping(8,'Raised Cosine',...
     'Nsym,Beta',6,0.25);
