@@ -1,9 +1,0 @@
-function h = trainNF(trainInput, trainOutput, FirOrder)
-
-    trainInput = [trainInput, ...
-        zeros(1,length(trainOutput)-length(trainInput))];  % pad with zeros
-    temp = ifft(fft(out)./fft(in));
-    h  = temp(1:FirOrder);
-
-
-end

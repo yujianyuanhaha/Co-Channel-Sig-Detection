@@ -6,15 +6,18 @@ clear all;
 
 
 SNR = zeros(1,10);
-BER = zerors(1,10);
+delta = zeros(1,10);
+BER = zeros(1,10);
+BERi = zeros(1,10);
+
 
 for i = 1:10
     
-    std = 10^(-6+i);
-    SNR(i) = 10*log(std)/log(10);
+    std = 10^(-8+i);
+    SNR(i) = 10*log(1/std)/log(10);
     
-    opt   = 'fftThr';
-    % opt   = 'kayEst'
+%     opt   = 'fftThr';
+    opt   = 'kayEst'
     
     
     Nb    = 2000;  % num of bits
@@ -85,9 +88,20 @@ for i = 1:10
     x_h = sign(x_end);   % BPSK dector
     BER(i) = sum(xb ~= x_h)/Nb;
     
+%     BERi(i) = qfunc(sqrt(2*1/std));
+    delta(i) = abs(f_h - f_nbi); 
+    
 end
 
 BER
+BERi
 
 
+figure;
+plot(SNR,delta,'-o','LineWidth',2);
+% hold on;
+% plot(SNR,BERi,'-*'); 
+grid on;
+xlabel('SNR')
+ylabel('error of frequency estimation')
 

@@ -1,23 +1,28 @@
 % create Signal of Interest(SoI)
 % BPSK Mod + Pulse Shaping(RC)
 
-% opt   = 'fftThr';
-opt   = 'trainNF'
-% opt   = 'fftThr';
-
-M = 20; % num of train
-Nb    = 2000;  % num of bits
-xb    = sign(randn([M+1,Nb]));  % BPSK
-trainInLen = 200;
-trainOutLen = 400;
-FirOrder = 100;
-H = zeros(M,FirOrder);
-% the last row for test
+close all;
+clear all;
 
 
-for i = 1:M
+SNR = zeros(1,10);
+delta = zeros(1,10);
+BER = zeros(1,10);
+BERi = zeros(1,10);
+
+
+for i = 1:10
     
-    x_mod = xb(i,:);
+    std = 10^(-8+i);
+    SNR(i) = 10*log(1/std)/log(10);
+    
+%     opt   = 'fftThr';
+    opt   = 'kayEst'
+    
+    
+    Nb    = 2000;  % num of bits
+    xb    = sign(randn([1,Nb]));  % BPSK
+    x_mod = xb;
     
     % ========= pulse shape (RC Raised Cosine)  ====
     sps   = 4;    % sample per symbol
@@ -47,7 +52,7 @@ for i = 1:M
     nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
     
     % ==== additive white noise ====
-    std = 10;
+%     std = 0.001;
     n = std * randn(1, Nb*sps);
     
     rx = x_ps + nbi + n;  % received signal
@@ -61,23 +66,42 @@ for i = 1:M
     
     % downsample for pulse shape
     x_ds = downsample(rx, sps);
-    x
     
     
-    % ==== training of narrowband mitigation ==========
-    h = trainNF(x_ds, x_ps, FirOrder)
+    % ==== narrowband mitigation ==========
+    if opt == 'fftThr'
+        % === method 1: fft threshold
+        threshold =  2 * max(abs(fft(p)));
+        x_end = fftThr(x_ds, threshold);
+        
+    elseif opt == 'kayEst'
+        % === method 2: Kay Estimation ==========
+        f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
+        t  = 1:sps:Nb*sps;
+        x_end = x_ds - A_nbi * cos(f_h*2*pi*t*dt);  % assume A_nbi known, phase known
+        
+    else
+        disp('wrong opt, choose among fftThr, kayEst');
+    end
     
+    % ======= evaluation ======
+    x_h = sign(x_end);   % BPSK dector
+    BER(i) = sum(xb ~= x_h)/Nb;
     
-    
+%     BERi(i) = qfunc(sqrt(2*1/std));
+    delta(i) = abs(f_h - f_nbi); 
     
 end
 
-% ======= evaluation ======
-x_h = sign(x_end);   % BPSK dector
-BER = sum(xb ~= x_h)/Nb
+BER
+BERi
 
 
-
-
-
+figure;
+plot(SNR,delta,'-o',);
+% hold on;
+% plot(SNR,BERi,'-*'); 
+grid on;
+xlabel('SNR')
+ylabel('error of frequency estimation')
 

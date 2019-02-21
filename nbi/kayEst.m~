@@ -2,9 +2,12 @@ function f = kayEst(s,fs)
 % Kay's estimation
 % Input: s - signal vector
 %        fs - sample rate
-% Output: f - estimated frequency
+% Output: f - estimated frequen
 
-    minRes = 5; % min resolution
+
+
+
+    minRes = 5; % 5Hz resolution
     N = length(s);
     sum1 = 0;
     sum2 = 0;

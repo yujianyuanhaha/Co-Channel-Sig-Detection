@@ -1,7 +1,5 @@
 function y = fftThr(x,threshold)
-% Input: x - signal vector
-%        threshold - scalar, max thr in frequency domain
-% Output: y - processed vector
+% Input: x - 
     X = fft(x);
     for i = 1:length(x)
         if abs(X(i)) > threshold

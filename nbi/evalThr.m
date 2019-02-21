@@ -95,4 +95,12 @@ BER
 BERi
 
 
+figure;
+plot(SNR,BER,'-o','LineWidth',2);
+hold on;
+plot(SNR,BERi,'-*','LineWidth',2); 
+grid on;
+xlabel('SNR')
+ylabel('BER')
+legend('fftThr','ideal')
 
