@@ -30,18 +30,18 @@ for i = 1:M+1
     
     x_mod = xb(i,:);
     
-    p     = rcosdesign(beta,span,sps,shape);
+    p     = myRC(beta,span,sps,shape);
     upsampled = upsample( x_mod, sps);
     upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
     temp = conv(upsampled, p);
-    x_ps = temp(length(p)+1:end-(sps*span/2-1));        % to be fixed, handcore
+    x_ps = temp(length(p)+1:end-(sps*span/2-1));
     
     
     dt = 1/fs;  %  min time step duration
     t  = 1:Nb*sps;
-  
-    nbi = 10 * cos( 2*pi*f_nbi*t*dt + 0);     
-    n = std * randn(1, Nb*sps);  
+    
+    nbi = 10 * cos( 2*pi*f_nbi*t*dt + 0);
+    n = std * randn(1, Nb*sps);
     rx = x_ps + nbi + n;  % received signal
     
     x_ds = downsample(rx, sps);

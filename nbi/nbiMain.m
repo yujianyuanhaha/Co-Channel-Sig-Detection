@@ -23,12 +23,13 @@ f_nbi = 770;
 % ------- start -------------------
 xb    = sign(randn([1,Nb]));  % BPSK
 x_mod = xb;
-% p     = rcosdesign(beta,span,sps,shape); %pulse shape (RC Raised Cosine)
+
+% pulse shaping
 p     = myRC(beta,span,sps,shape); 
 upsampled = upsample( x_mod, sps);  
 upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
 temp = conv(upsampled, p); 
-x_ps = temp(length(p)+1:end-(sps*span/2-1));        % to be fixed, handcore
+x_ps = temp(length(p)+1:end-(sps*span/2-1));       
  
 dt = 1/fs;  %  min time step duration 
 t  = 1:Nb*sps;

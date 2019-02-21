@@ -9,49 +9,46 @@ SNR = zeros(1,10);
 BER = zeros(1,10);
 BERi = zeros(1,10);
 
+Nb    = 2000;  % num of bits
+opt   = 'fftThr';
+sps   = 4;    % sample per symbol
+span  = 4;    % duration
+beta  = 0.25;
+shape = 'sqrt';
+fs = 10000;  % sample rate
+f_nbi = 770;
 
 for i = 1:10
     
     std = 10^(-8+i);
     SNR(i) = 10*log(1/std)/log(10);
     
-    opt   = 'fftThr';
-    % opt   = 'kayEst'
-    
-    
-    Nb    = 2000;  % num of bits
     xb    = sign(randn([1,Nb]));  % BPSK
     x_mod = xb;
     
     % ========= pulse shape (RC Raised Cosine)  ====
-    sps   = 4;    % sample per symbol
-    span  = 4;    % duration
-    beta  = 0.25;
-    shape = 'sqrt';
-    p     = rcosdesign(beta,span,sps,shape);
-    rCosSpec =  fdesign.pulseshaping(sps,'Raised Cosine',...
-        'Nsym,Beta',span,0.25);
-    rCosFlt = design ( rCosSpec );
-    rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
-    upsampled = upsample( x_mod, sps); % upsample
-    FltDelay = (span*sps)/2;           % shift
-    temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
-    x_ps = temp(9:end);        % to be fixed
+    
+    % pulse shaping
+    p     = myRC(beta,span,sps,shape);
+    upsampled = upsample( x_mod, sps);
+    upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
+    temp = conv(upsampled, p);
+    x_ps = temp(length(p)+1:end-(sps*span/2-1));
     
     %==== [skipped single carrier upgrade] ==============
-    fs = 10000;  % sample rate
+    
     dt = 1/fs;  %  min time step duration
     t  = 1:Nb*sps;
     
     %====== additive nbi signal (on the channel) ====
-    f_nbi = 770;
+    
     w_nbi = 2*pi*f_nbi;  %
     A_nbi = 10.0;
     phi_nbi = 0.0*pi;
     nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
     
     % ==== additive white noise ====
-%     std = 0.001;
+    %     std = 0.001;
     n = std * randn(1, Nb*sps);
     
     rx = x_ps + nbi + n;  % received signal
@@ -98,7 +95,7 @@ BERi
 figure;
 plot(SNR,BER,'-o','LineWidth',2);
 hold on;
-plot(SNR,BERi,'-*','LineWidth',2); 
+plot(SNR,BERi,'-*','LineWidth',2);
 grid on;
 xlabel('SNR')
 ylabel('BER')
