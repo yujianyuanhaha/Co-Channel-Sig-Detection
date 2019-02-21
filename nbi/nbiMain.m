@@ -23,7 +23,8 @@ f_nbi = 770;
 % ------- start -------------------
 xb    = sign(randn([1,Nb]));  % BPSK
 x_mod = xb;
-p     = rcosdesign(beta,span,sps,shape); %pulse shape (RC Raised Cosine)
+% p     = rcosdesign(beta,span,sps,shape); %pulse shape (RC Raised Cosine)
+p     = myRC(beta,span,sps,shape); 
 upsampled = upsample( x_mod, sps);  
 upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
 temp = conv(upsampled, p); 
