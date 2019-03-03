@@ -10,8 +10,8 @@ clear all;
 
 opt   = 'trainNF'
 
-M  = 100;    % num of train
-Nb = 20000;  % num of bits
+M  = 10;    % num of train
+Nb = 2000;  % num of bits
 xb = sign(randn([M+1,Nb]));  % BPSK
 trainInLen = 40;
 trainOutLen = 80;
@@ -40,7 +40,7 @@ for i = 1:M+1
     dt = 1/fs;  %  min time step duration
     t  = 1:Nb*sps;
     
-    nbi = 0.01 * cos( 2*pi*f_nbi*t*dt + 0);
+    nbi = 1 * cos( 2*pi*f_nbi*t*dt + 0);
     n = std * randn(1, Nb*sps);
     rx = x_ps + nbi + n;  % received signal
     
