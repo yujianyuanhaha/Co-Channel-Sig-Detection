@@ -18,10 +18,12 @@ beta  = 0.25;
 shape = 'sqrt';
 fs = 10000;  % sample rate
 
-for i = 1:10
+SNRdb = -20:5:50;
+SNR = 10.^(SNRdb/10);
+for i = 1:15
     
-    std = 10^(-8+i);
-    SNR(i) = 10*log(1/std)/log(10);
+    
+    
     
     
     xb    = sign(randn([1,Nb]));  % BPSK
@@ -48,7 +50,7 @@ for i = 1:10
     phi_nbi = 0.0*pi;
     nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi);
 
-    n = std * randn(1, Nb*sps);
+    n = 1/sqrt(2*SNR(i)) * randn(1, Nb*sps);
     
     rx = x_ps + nbi + n;  % received signal
 
@@ -85,7 +87,7 @@ BERi
 
 
 figure;
-plot(SNR,delta,'-o','LineWidth',2);
+plot(SNRdb,delta,'-o','LineWidth',2);
 % hold on;
 % plot(SNR,BERi,'-*'); 
 grid on;
