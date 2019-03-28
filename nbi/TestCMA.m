@@ -10,7 +10,6 @@
 clear all;
 
 N     = 30000;    % number of sample data
-fs    = 30000;
 SNRdB = 10;       % Signal to noise ratio(dB)
 SIRdB = 10;       % Signal to inteference ratio(dB)
 fi    = 0.4;     % inteference freq, relative
@@ -19,20 +18,35 @@ ChL   = 1;        % length of the channel= ChL+1
 EqD   = round((L+ChL)/2);  %  channel equalization delay
 R2    = 2;         % step size
 mu    = 0.001;     % constant modulous of BPSK symbols
+sps   = 1;    % sample per symbol
+span  = 4;    % duration
+beta  = 0.25;
+shape = 'sqrt';
 
 i = sqrt(-1);
 Ch = [0.8+i*0.1 .9-i*0.2];  % complex channel
 Ch = Ch/norm(Ch);           % normalize
 TxS = round(rand(1,N))*2-1; % BPSK
-% TxS=TxS+sqrt(-1)*(round(rand(1,N))*2-1);  % QPSK
+TxS=TxS+sqrt(-1)*(round(rand(1,N))*2-1);  % QPSK
 x = filter(Ch,1,TxS);       %channel distortion
 
+% ======== Pulse Shaping ===========
+p         = myRC(beta,span,sps,shape); 
+% upsampled = upsample( x, sps);  
+% upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
+% temp      = conv(upsampled, p); 
+% x         = temp(length(p)+1:end-(sps*span/2-1)); 
+
 % ======== noise & NBI ============================
-n   = randn(1,N)+sqrt(-1)*randn(1,N);    % additive white gaussian noise (complex)
-n   = n/norm(n)*10^(-SNRdB/10)*norm(x);  % scale noise power
+n   = randn(1,N*sps) + sqrt(-1)*randn(1,N*sps);    % additive white gaussian noise (complex)
+n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
 Ai  = sqrt(2)/(10^(SIRdB/10));           % nbi amplitude
-nbi = 0.8 * cos([1:N] * fi *pi);
-x1 = x + n + nbi;                         % received noisy signal
+% nbi = 0.8 * cos([1:N*sps] * fi *pi);
+nbi = 0.8 * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
+x1  = x + n + nbi;                         % received noisy signal
+
+% x1 = downsample(x1, sps)*1; 
+
 
 % ========== estimation using CMA =====================
 [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
@@ -47,14 +61,15 @@ end  % channel matrix
 fh   = c'*H; % channel equalizer
 temp = find(abs(fh)==max(abs(fh))); %find maximum
 sb1  = sym/(fh(temp));  % normalize the output
-%  sb1=sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
-sb1  = sign(real(sb1));  % BPSK detection
+sb1=sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
+% sb1  = sign(real(sb1));  % BPSK detection
 strt = L/2-1;
 sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
 SER  = length(find(sb2~=0))/length(sb2);% SER calculations
 disp(SER);
 
-sb1_null = sign(real(x1));  % baseline
+% sb1_null = sign(real(x1));  % baseline
+sb1_null = sign(real(x1)) +sqrt(-1)*sign(imag(x1));
 sb2_null  = sb1_null-TxS;  % detecting error symbols
 SER2  = length(find(sb2_null~=0))/length(sb2_null);
 disp(SER2);
