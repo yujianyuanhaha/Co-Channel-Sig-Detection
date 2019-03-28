@@ -18,11 +18,12 @@ e = zeros(1,K);   % to store the error signal
 c = zeros(L+1,1); % weight
 c(EqD) = 1;       % initial condition
 
-for i=1:K
+for i = 1:K
     e(i) = abs(c'*X(:,i))^2-R2 ;  % initial error
-    if abs(e(i)) > 1000           % aviod bugs
+    if abs(e(i)) > 1000           % aviod bugs/ explosion
+        disp("EXPLODE");
         break;
-    end                     
+    end
     c = c-mu*2*e(i)*X(:,i)*X(:,i)'*c ;   % update equalizer co-efficients
     c(EqD) = 1;
 end

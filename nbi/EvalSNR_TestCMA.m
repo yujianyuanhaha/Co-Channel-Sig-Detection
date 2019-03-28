@@ -1,7 +1,7 @@
 N     = 30000;    % number of sample data
 % SNRdB = 20;       % Signal to noise ratio(dB)
-SIRdB = 10;       % Signal to inteference ratio(dB)
-fi    = 6000;     % inteference freq
+SIRdB = 20;       % Signal to inteference ratio(dB)
+fi    = 0.01;     % inteference freq
 L     = 20;       % smoothing length L+1
 ChL   = 1;        % length of the channel= ChL+1
 EqD   = round((L+ChL)/2);  %  channel equalization delay
@@ -30,7 +30,7 @@ for SNRdB = -5:10
     n   = n/norm(n)*10^(-SNRdB/10)*norm(x);  % scale noise power
     Ai  = sqrt(2) / (10^(SIRdB/10));           % nbi amplitude
 %     nbi = 0.8 * cos([1:N]/fi*pi);
-    nbi = 0.8 * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
+    nbi = Ai * (0.8 * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi))) ;
 
     x1 = x + n + nbi;                         % received noisy signal
     
@@ -67,6 +67,8 @@ for SNRdB = -5:10
 end
 
 % ======= Plot =================
+SERs
+SER2s 
 SNRdB = -5:10;
 
 figure;
