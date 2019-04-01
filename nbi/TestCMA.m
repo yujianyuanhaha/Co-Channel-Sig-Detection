@@ -10,15 +10,18 @@
 clear all;
 
 vSER = [];
-NN = 40;
+NN = 1;
 
-for i = 1:NN
+for k = 1:NN
 
-opt   = "BPSK";
-% opt   = "QPSK";
+    timeOffset = 0;
+    
+    
+% opt   = "BPSK";
+opt   = 'QPSK';
 % opt
 SNRdB = 10;       % Signal to noise ratio(dB)
-SIRdB = 5;       % Signal to inteference ratio(dB)
+SIRdB = 10;       % Signal to inteference ratio(dB)
 fi    = 0.01;     % inteference freq, relative
 
 N     = 30000;    % number of sample data
@@ -28,15 +31,15 @@ EqD   = round((L+ChL)/2);  %  channel equalization delay
 R2    = 2;         % step size
 mu    = 0.001;     % constant modulous of BPSK symbols
 
-sps   = 1;    % sample per symbol
+sps   = 4;    % sample per symbol
 span  = 4;    % duration
 beta  = 0.25;
 shape = 'sqrt';
 
-i = sqrt(-1);
-Ch = [0.8+i*0.1 .9-i*0.2];  % complex channel
+% i = sqrt(-1);
+Ch = [0.8+j*0.1 .9-j*0.2];  % complex channel
 Ch = Ch/norm(Ch);           % normalize
-if opt == "BPSK"
+if opt == 'BPSK'
     TxS = round(rand(1,N))*2-1; % BPSK
 else
     TxS = (round(rand(1,N))*2-1) + sqrt(-1)*(round(rand(1,N))*2-1);  % QPSK
@@ -44,11 +47,25 @@ end
 x = filter(Ch,1,TxS);       %channel distortion
 
 % ======== Pulse Shaping ===========
-p         = myRC(beta,span,sps,shape); 
+% p         = myRC(beta,span,sps,shape); 
 % upsampled = upsample( x, sps);  
-% upsampled = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
-% temp      = conv(upsampled, p); 
-% x         = temp(length(p)+1:end-(sps*span/2-1)); 
+% upsampled2 = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
+% temp      = conv(upsampled2, p); 
+% x2         = temp(length(p)+1:end-(sps*span/2-1)); 
+
+sps   = 4;    % sample per symbol
+span  = 4;    % duration
+beta  = 0.25;
+shape = 'sqrt';
+p     = rcosdesign(beta,span,sps,shape);
+rCosSpec =  fdesign.pulseshaping(sps,'Raised Cosine',...
+    'Nsym,Beta',span,0.25);
+rCosFlt = design ( rCosSpec );
+rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
+upsampled = upsample( x, sps); % upsample
+FltDelay = (span*sps)/2;           % shift
+temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
+x1 = temp(9:end);        % to be fixed
 
 % ======== noise & NBI ============================
 Ai  = sqrt(2)/(10^(SIRdB/10));           % nbi amplitude
@@ -58,10 +75,19 @@ nbi = Ai * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
 n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
 
 
-x1  = x + n + nbi;                         % received noisy signal
+%  x1  = x1 + n + nbi;                         % received noisy signal
 
-% x1 = downsample(x1, sps)*1; 
+% x1 = downsample(x1, sps); 
+% 
+% MF = conv(x1, p);
+% x1 = MF(ceil(length(p)/2):end);
+% x1 = downsample(x1,sps);
+% x1 = x1(9:end);
+x1 = downsample(x1,sps);
 
+if length(x1) < N
+    x1 = [x1, zeros(1,N-length(x1))];
+end
 
 % ========== estimation using CMA =====================
 [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
@@ -76,7 +102,7 @@ end  % channel matrix
 fh   = c'*H; % channel equalizer
 temp = find(abs(fh)==max(abs(fh))); %find maximum
 sb1  = sym/(fh(temp));  % normalize the output
-if opt == "BPSK"
+if opt == 'BPSK'
     sb1  = sign(real(sb1));  % BPSK detection
 else
     sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
@@ -88,7 +114,7 @@ SER  = length(find(sb2~=0))/length(sb2);% SER calculations
 
 vSER = [vSER , SER];
 
-if opt== "BPSK"
+if opt== 'BPSK'
     sb1_null = sign(real(x1));  % baseline
 else
     sb1_null = sign(real(x1)) +sqrt(-1)*sign(imag(x1));
