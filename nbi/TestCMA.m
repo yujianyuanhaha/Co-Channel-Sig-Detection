@@ -9,16 +9,16 @@
 
 clear all;
 
-vSER = [];
-NN = 1;
+SERs = [];
+NN = 5;
 
 for k = 1:NN
 
     timeOffset = 0;
     
     
-% opt   = "BPSK";
-opt   = 'QPSK';
+opt   = 'BPSK';
+% opt   = 'QPSK';
 % opt
 SNRdB = 10;       % Signal to noise ratio(dB)
 SIRdB = 10;       % Signal to inteference ratio(dB)
@@ -36,7 +36,12 @@ span  = 4;    % duration
 beta  = 0.25;
 shape = 'sqrt';
 
-% i = sqrt(-1);
+p                 = rcosdesign(beta,span,sps,shape);
+rCosSpec          =  fdesign.pulseshaping(sps,'Raised Cosine',...
+    'Nsym,Beta',span,0.25);
+rCosFlt           = design ( rCosSpec );
+rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
+
 Ch = [0.8+j*0.1 .9-j*0.2];  % complex channel
 Ch = Ch/norm(Ch);           % normalize
 if opt == 'BPSK'
@@ -47,42 +52,21 @@ end
 x = filter(Ch,1,TxS);       %channel distortion
 
 % ======== Pulse Shaping ===========
-% p         = myRC(beta,span,sps,shape); 
-% upsampled = upsample( x, sps);  
-% upsampled2 = [ zeros(1,sps*span/2), upsampled ];  % pad with zero
-% temp      = conv(upsampled2, p); 
-% x2         = temp(length(p)+1:end-(sps*span/2-1)); 
-
-sps   = 4;    % sample per symbol
-span  = 4;    % duration
-beta  = 0.25;
-shape = 'sqrt';
-p     = rcosdesign(beta,span,sps,shape);
-rCosSpec =  fdesign.pulseshaping(sps,'Raised Cosine',...
-    'Nsym,Beta',span,0.25);
-rCosFlt = design ( rCosSpec );
-rCosFlt.Numerator = rCosFlt.Numerator / max(rCosFlt.Numerator);
-upsampled = upsample( x, sps); % upsample
-FltDelay = (span*sps)/2;           % shift
-temp = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
-x1 = temp(9:end);        % to be fixed
+upsampled = upsample( x, sps);     % upsample
+FltDelay  = (span*sps)/2;           % shift
+temp      = filter(rCosFlt , [ upsampled , zeros(1,FltDelay) ] );
+x1        = temp(sps*span/2+1:end);        % to be fixed
 
 % ======== noise & NBI ============================
-Ai  = sqrt(2)/(10^(SIRdB/10));           % nbi amplitude
-
 n   = randn(1,N*sps) + sqrt(-1)*randn(1,N*sps);    % additive white gaussian noise (complex)
-nbi = Ai * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
+nbi = sqrt(2)/(10^(SIRdB/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
 n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
 
+x1  = x1 + n + nbi;                         % received noisy signal
 
-%  x1  = x1 + n + nbi;                         % received noisy signal
+% -- offset --
+x1 = x1(1+timeOffset:end);
 
-% x1 = downsample(x1, sps); 
-% 
-% MF = conv(x1, p);
-% x1 = MF(ceil(length(p)/2):end);
-% x1 = downsample(x1,sps);
-% x1 = x1(9:end);
 x1 = downsample(x1,sps);
 
 if length(x1) < N
@@ -112,9 +96,9 @@ sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
 SER  = length(find(sb2~=0))/length(sb2);% SER calculations
 % disp(SER);
 
-vSER = [vSER , SER];
+SERs = [SERs , SER];
 
-if opt== 'BPSK'
+if opt == 'BPSK'
     sb1_null = sign(real(x1));  % baseline
 else
     sb1_null = sign(real(x1)) +sqrt(-1)*sign(imag(x1));
@@ -148,7 +132,7 @@ SER2  = length(find(sb2_null~=0))/length(sb2_null);
 
 
 end
-
-SER = sum(vSER)/NN
+SERs
+SER = sum(SERs)/NN
 figure;
-plot(vSER);
+plot(SERs);
