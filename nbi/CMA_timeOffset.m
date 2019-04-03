@@ -9,13 +9,14 @@
 
 clear all;
 
-TimeOffset = 0:1:10;
+% TimeOffset = 0:10;
+TimeOffset = 1;
 % opt   = 'QPSK';
 opt   = 'BPSK';
 % opt
 % Signal to noise ratio(dB)
-SIRdB = 10; 
-SNRdB = 10;       % Signal to inteference ratio(dB)
+SIRdB = 20;
+SNRdB = 20;       % Signal to inteference ratio(dB)
 % Fi    = 0.01 * (4:4:40);     % inteference freq, relative
 fi = 0.01;
 
@@ -55,7 +56,8 @@ NN = length(TimeOffset);
 
 for k = 1:NN
     
-    timeOffset = TimeOffset(k);
+%         timeOffset = TimeOffset(k);
+    timeOffset = 0
     
     if opt == 'BPSK'
         TxS = round(rand(1,N))*2-1; % BPSK
@@ -75,19 +77,19 @@ for k = 1:NN
     nbi = sqrt(2)/(10^(SIRdB/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
     n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
     
-    x1  = x1 + n + nbi;                         % received noisy signal
+%     x1  = x1 + n + nbi;                         % received noisy signal
     
     % -- offset --
     x1 = x1(1+timeOffset:end);
     
-    x1 = downsample(x1,sps);
+    %     x1 = downsample(x1,sps);
     
-    if length(x1) < N
-        x1 = [x1, zeros(1,N-length(x1))];
+    if length(x1) < N*sps
+        x1 = [x1, zeros(1,N*sps-length(x1))];
     end
     
     % ========== estimation using CMA =====================
-    [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
+    [c, X, e] = myCMA(N*sps, L, EqD, x1, R2, mu);
     sym = c'* X;   % symbol estimation
     
     % ======= calculate SER/ BER for BPSK =================
@@ -99,38 +101,57 @@ for k = 1:NN
     fh   = c'*H; % channel equalizer
     temp = find(abs(fh)==max(abs(fh))); %find maximum
     sb1  = sym/(fh(temp));  % normalize the output
+    
+    % correct offset
+    sb1_shift = [sb1(timeOffset+1:end), zeros(1,timeOffset)];
+% sb1_shift = circleshift(sb1,-10,2);  % default shift right
+    % -- downsample ------
+    sb1 = downsample(sb1_shift,sps);
+    
     if opt == 'BPSK'
         sb1  = sign(real(sb1));  % BPSK detection
     else
         sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
     end
     strt = L/2-1;
-    sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
+    
+    
+    
+    
+    %     sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
+    temp = TxS(strt+1:end);
+    %     temp2 = sb1(end-length(temp)+1:end);
+    % left shift 10
+    %     temp2 = [temp2(11:end),zeros(1,10)];
+    sb1 = [sb1(11:end),zeros(1,10)];
+    temp2 = sb1(1:length(temp));
+    %     sb2  = temp2 - temp;
+    sb2 = temp2 - temp;
     SER  = length(find(sb2~=0))/length(sb2);% SER calculations
-    % disp(SER);
+    disp(SER);
     
     SERs = [SERs , SER];
     
-    if opt == 'BPSK'
-        sb1_null = sign(real(x1));  % baseline
-    else
-        sb1_null = sign(real(x1)) +sqrt(-1)*sign(imag(x1));
-    end
-    sb2_null  = sb1_null-TxS;  % detecting error symbols
-    SER2  = length(find(sb2_null~=0))/length(sb2_null);
-    SER2s = [SER2s , SER2];
+%     if opt == 'BPSK'
+%         sb1_null = sign(real(x1));  % baseline
+%     else
+%         sb1_null = sign(real(x1)) +sqrt(-1)*sign(imag(x1));
+%     end
+%     sb2_null  = sb1_null-TxS;  % detecting error symbols
+%     SER2  = length(find(sb2_null~=0))/length(sb2_null);
+%     SER2s = [SER2s , SER2];
     
 end
 SERs
-SER = sum(SERs)/length(NN)
+SER = sum(SERs)/NN
 
 % ===== fig =======
-figure;
-semilogy(TimeOffset,SERs,'-o','LineWidth',2);
-hold on;
-semilogy(TimeOffset,SER2s,'-*','LineWidth',2);
-grid on;
-title('BER over time offset of CMA - BPSK');
-xlabel('timeOffset');
-ylabel('BER');
-legend('CMA','null');
+% figure;
+% semilogy(TimeOffset,SERs,'-o','LineWidth',2);
+% % hold on;
+% % semilogy(TimeOffset,SER2s,'-*','LineWidth',2);
+% grid on;
+% title('BER over time offset of CMA - BPSK');
+% xlabel('timeOffset');
+% ylabel('BER');
+% legend('CMA','null');

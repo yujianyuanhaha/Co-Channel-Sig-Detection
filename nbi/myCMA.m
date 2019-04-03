@@ -21,7 +21,7 @@ c(EqD) = 1;       % initial condition
 for i = 1:K
     e(i) = abs(c'*X(:,i))^2-R2 ;  % initial error
     if abs(e(i)) > 1000           % aviod bugs/ explosion
-        disp("EXPLODE");
+        disp('EXPLODE');
         break;
     end
     c = c-mu*2*e(i)*X(:,i)*X(:,i)'*c ;   % update equalizer co-efficients

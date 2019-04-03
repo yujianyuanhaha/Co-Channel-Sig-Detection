@@ -21,7 +21,8 @@ f_nbi = 770;
 
 
 % ------- start -------------------
-xb    = sign(randn([1,Nb]));  % BPSK
+% xb    = sign(randn([1,Nb]));  % BPSK
+xb    = sign(randn([1,Nb])) + 1j* sign(randn([1,Nb])); 
 x_mod = xb;
 
 % pulse shaping
@@ -38,19 +39,24 @@ t  = 1:Nb*sps;
 nbi = 10 * cos(2*pi*f_nbi*t*dt + 0);
 
 std = 0.001;  % noise
-n = std * randn(1, Nb*sps);
+% n = std * randn(1, Nb*sps);
+n = std *( randn(1, Nb*sps) + 1j*randn(1, Nb*sps));
 
-rx = x_ps + nbi + n;  % received signal
-
+% rx = x_ps + nbi + n;  % received signal
+rx = x_ps;
 % ======== RX side ======
-x_ds = downsample(rx, sps);  % downsample for pulse shape
+x_ds2 = downsample(rx, sps);  % downsample for pulse shape
+MF = conv(rx, p);
+x_ds = MF(floor(length(p)/2):sps:end);
+x_ds = x_ds(1:2000);
 
 
 % ==== narrowband mitigation ==========
 if opt == 'fftThr'    
     threshold =  2 * max(abs(fft(p)));
 %     threshold2 = calculate_threshold(rx)  % fail
-    x_end = fftThr(x_ds, threshold);
+%     x_end = fftThr(x_ds, threshold);
+x_end = x_ds;  % null operate
 elseif opt == 'kayEst'
     f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
     t  = 1:sps:Nb*sps;    
@@ -61,7 +67,8 @@ else
 end
 
 % ======= evaluation ======
-x_h = sign(x_end);   % BPSK dector
+% x_h = sign(x_end);   % BPSK dector
+x_h = sign(real(x_end)) + 1j*sign(imag(x_end));
 BER = sum(xb ~= x_h)/Nb
 
 

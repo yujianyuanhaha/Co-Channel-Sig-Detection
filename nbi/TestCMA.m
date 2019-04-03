@@ -10,6 +10,7 @@
 clear all;
 
 SERs = [];
+SER2s = [];
 NN = 5;
 
 for k = 1:NN
@@ -17,8 +18,8 @@ for k = 1:NN
     timeOffset = 0;
     
     
-opt   = 'BPSK';
-% opt   = 'QPSK';
+% opt   = 'BPSK';
+opt   = 'QPSK';
 % opt
 SNRdB = 10;       % Signal to noise ratio(dB)
 SIRdB = 10;       % Signal to inteference ratio(dB)
@@ -28,8 +29,14 @@ N     = 30000;    % number of sample data
 L     = 20;       % smoothing length L+1
 ChL   = 1;        % length of the channel= ChL+1
 EqD   = round((L+ChL)/2);  %  channel equalization delay
-R2    = 2;         % step size
-mu    = 0.001;     % constant modulous of BPSK symbols
+ % constant modulous of BPSK/QPSK symbols
+if opt == 'BPSK'
+    R2  = 1;       
+else
+    R2  = 2;
+end
+
+mu    = 0.001;     % step size
 
 sps   = 4;    % sample per symbol
 span  = 4;    % duration
@@ -105,6 +112,7 @@ else
 end
 sb2_null  = sb1_null-TxS;  % detecting error symbols
 SER2  = length(find(sb2_null~=0))/length(sb2_null);
+SER2s = [SER2s , SER2];
 % disp(SER2);
 % ======= Plot =================
 
