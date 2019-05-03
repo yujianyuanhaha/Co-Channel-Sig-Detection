@@ -1,7 +1,7 @@
 close all
 clear variables
 
-addpath('./common/','./NBI/FD_nonlinear/');
+addpath('./common/','./NBI/FD_nonlinear/','./NBI/CMA/');
 
 N = 1e6;
 bitsPerSym = 1;
@@ -17,7 +17,11 @@ EbNo = 10;
 eBW = 0.25;
 
 % mitigation method
-method = 'FFT-Thresh';
+% method = 'FFT-Thresh';
+% method = 'NotchFilter';
+method = 'CMA'
+
+
 % generate TX signal
 bits = round(rand(1,N));
 sig = psk_mod(bitsPerSym, sps, eBW, bits);
@@ -36,9 +40,22 @@ if(strcmp(method,'FFT-Thresh'))
     threshold = calculate_threshold(r);
     % apply the threshold for nonlinear NBI mitigation
     rClean = FreqDomainCancel(r, threshold);
+elseif(strcmp(method,'CMA'))    
+    L = 20;
+    EqD= 11;
+    R2 = 1;
+    mu = 0.001;    
+    out = myCMA2(N, L, EqD, r, R2, mu);  
+    rClean = [zeros(1,10),out];
+    
+elseif(strcmp(method,'NotchFilter')) 
+    rClean = NotchFilter(r,0.999);
+    
+    
+    
 end
 
 % check results
-DrawPSD([sig;rChan;r;rClean],fs,{'Gold','Channel','Rx','Mitigated'},4096);
+% DrawPSD([sig;rChan;r;rClean],fs,{'Gold','Channel','Rx','Mitigated'},4096);
 unMitBER = psk_demod(r, bitsPerSym, sps, eBW,bits,5000)
 MitBER = psk_demod(rClean, bitsPerSym, sps, eBW,bits,5000)

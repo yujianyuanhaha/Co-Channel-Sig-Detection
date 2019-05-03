@@ -112,19 +112,27 @@ for ii=1:NumVars
             x1 = [x1, zeros(1,N-length(x1))];
         end
         
-        % ========== estimation using CMA =====================
-        [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
-        sym = c'* X;   % symbol estimation
         
-        % ======= calculate SER/ BER for BPSK =================
-        H = zeros(L+1,L+ChL+1);
-        for i = 1:L+1
-            H(i,i:i+ChL) = Ch;
-        end  % channel matrix
         
-        fh   = c'*H; % channel equalizer
-        temp = find(abs(fh)==max(abs(fh))); %find maximum
-        sb1  = sym/(fh(temp));  % normalize the output
+%         % ========== estimation using CMA =====================
+%         [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
+%         sym = c'* X;   % symbol estimation
+%         
+%         % ======= calculate SER/ BER for BPSK =================
+%         H = zeros(L+1,L+ChL+1);
+%         for i = 1:L+1
+%             H(i,i:i+ChL) = Ch;
+%         end  % channel matrix
+%         
+%         fh   = c'*H; % channel equalizer
+%         temp = find(abs(fh)==max(abs(fh))); %find maximum
+%         sb1  = sym/(fh(temp));  % normalize the output
+        sb1 = myCMA2(N, L, EqD, x1, R2, mu);
+        
+        
+        
+        
+        
         if opt == 'BPSK'
             sb1  = sign(real(sb1));  % BPSK detection
         else
