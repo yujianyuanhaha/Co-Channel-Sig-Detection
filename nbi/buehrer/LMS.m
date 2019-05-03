@@ -8,13 +8,10 @@ function [y,Weights] = LMS(x,Weights,delta, TrainingSequence)
 % January 2019 - Wireless @ Virginia Tech.  Please contact Mike Buehrer at
 % buehrer@vt.edu for questions or concerns.
 % 
-% February 2019 - Updated to work with linear equalization.
-% 
+%
 %   INPUTS: 
-%           x is a Nr x Nb matrix of received samples.  Nr is the length of
-%           input vector (for adpative antennas, this is the number of 
-%           received elements) while Nb is the number of samples.  Nb can
-%           be one.
+%           x is a Nr x Nb matrix of received samples.  Nr is the number of
+%           received elements while Nb is the number of samples.  
 %
 %           Weights is an Nr x 1 vector of initial weights.  These can be
 %           zero to start.
@@ -39,7 +36,7 @@ function [y,Weights] = LMS(x,Weights,delta, TrainingSequence)
 %           Weights is a Nr x 1 vector of Weight values after processing
 %           the data and updating the weights.
 
-Nb = size(x,2);     % number of samples of the input data
+Nb = size(  x,2);     % number of samples of the input data
 
 % if the intial weights are specified, initialize them to [1 0 0 ... 0]'
 if nargin < 2

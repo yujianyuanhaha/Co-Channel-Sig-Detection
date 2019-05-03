@@ -13,7 +13,7 @@ VARY = 'SIR';
 
 SERs = [];
 SER2s = [];
-NN = 20;
+NN = 2;
 
 %SNRdB = [0:8];
 %SIRdB = -10;
@@ -139,7 +139,8 @@ for ii=1:NumVars
             sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
         end
         strt = L/2-1;
-        sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
+        sb2 = sb1 - TxS;
+%         sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
         SER(k)  = length(find(sb2~=0))/length(sb2);% SER calculations
         % disp(SER);
         

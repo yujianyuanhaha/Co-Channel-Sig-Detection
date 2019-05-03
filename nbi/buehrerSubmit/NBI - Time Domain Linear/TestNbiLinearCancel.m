@@ -29,18 +29,21 @@ for k=1:length(SNRdB)
     
     
     % add noise to received signal
-    r = r + 1/sqrt(2*SNR)*(randn(1,length(r))+j*randn(1,length(r)));
+%     r = r + 1/sqrt(2*SNR)*(randn(1,length(r))+j*randn(1,length(r)));
     
     % add interference
     phase = rand*2*pi;
     int = 1/sqrt(2*SIR)*cos(2*pi*fc*t+ phase) - j*1/sqrt(2*SIR)*sin(2*pi*fc*t+ phase);
     
-    r = r + int;
+%     r = r + int;
     
     % matched filter
     MF = conv(r, pulse);
     
     x = MF(20:4:end);
+    
+    
+    
     
     %initialize weights
     w_lms(:,1) = [zeros(1,N)]';

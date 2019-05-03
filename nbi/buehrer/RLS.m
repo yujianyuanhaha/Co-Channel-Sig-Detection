@@ -1,27 +1,28 @@
-function [y,Weights] = LMS(x,Weights,delta, TrainingSequence)
-% function [y,Weights] = LMS(x,Weights,delta, TrainingSequence)
-%
-% This function implements the least mean squares (LMS) algorithm for
-% updating the weights of a beamforming array.
+function [y,Weights, P] = RLS(x, Weights, P, lambda_inv, TrainingSequence)
+% function [y,Weights,P] = RLS(x,Weights,P, lambda_inv, TrainingSequence)
 %
 %
 % January 2019 - Wireless @ Virginia Tech.  Please contact Mike Buehrer at
 % buehrer@vt.edu for questions or concerns.
 % 
-% February 2019 - Updated to work with linear equalization.
-% 
+% This function implements the recursive least squares (RLS) algorithm for
+% updating the weights of a beamforming array.
+%
 %   INPUTS: 
-%           x is a Nr x Nb matrix of received samples.  Nr is the length of
-%           input vector (for adpative antennas, this is the number of 
-%           received elements) while Nb is the number of samples.  Nb can
-%           be one.
+%           x is a Nr x Nb matrix of received samples.  Nr is the number of
+%           received elements while Nb is the number of samples.  
 %
 %           Weights is an Nr x 1 vector of initial weights.  These can be
 %           zero to start.
 %
-%           delta is an update fator which should be negative.  Ideally
-%           its absolute value is smaller than the inverse of the largest 
-%           eigenvalue of the received signal correlation matrix.
+%           P is a matrix that is used in the RLS update.  It will be
+%           udpated and returned every time the function is called.  It
+%           should be Nr x Nr.
+%
+%           lambda_inv is an update fator which should be positive.  lambda
+%           should be close to (but smaller than 1).  lambda_inv =
+%           1/lambda
+%
 %
 %           TrainingSequence is a 1 x Nt vector of training (known data) 
 %           values (i.e., these should correspond to the desired signal's
@@ -38,8 +39,12 @@ function [y,Weights] = LMS(x,Weights,delta, TrainingSequence)
 %
 %           Weights is a Nr x 1 vector of Weight values after processing
 %           the data and updating the weights.
+%
+%           P is the updated P matrix for RLS and is Nr x Nr.
 
-Nb = size(x,2);     % number of samples of the input data
+% number of antennas is implicitly specified by the size of x
+NumRxAntennas = size(x,1);
+Nb = size(x,2);
 
 % if the intial weights are specified, initialize them to [1 0 0 ... 0]'
 if nargin < 2
@@ -54,27 +59,26 @@ else
     DecisionDirected = 1;
 end
 
-
-% processs all of the data samples sequentially
 for i=1:Nb
     
    % once we have exhausted the training sequence, change to decision
    % directed mode.
-   %if i > length(TrainingSequence)
-   %    DecisionDirected = 1;
-   %end
-   
-   if DecisionDirected  % once in decision directed mode, 
-                        % create pseudo training data
-       d = sign(real(Weights'*x(:,i)));  % pseudo training
-       e = (d-Weights'*x(:,i));          % error
-       Weights = Weights - 2*delta*conj(e)*x(:,i);  %weight update       
-   else
-        e = (TrainingSequence(i)-Weights'*x(:,i)); % error
-        Weights = Weights - 2*delta*conj(e)*x(:,i);% weight update
+   if i > length(TrainingSequence)
+       DecisionDirected = 1;
    end
    
-   % create output signal
+   % if we are in Decision Directed mode, we must infer the training value
+   % using the previous weights
+   if DecisionDirected
+       TrainingSequence(1,i) = sign(real(Weights'*x(:,i)));  % pseudo training
+   end
+   
+   % standard RLS update
+   v = P*x(:,i);
+   k = lambda_inv*v/(1+lambda_inv*x(:,i)'*v);
+   alpha = TrainingSequence(1,i)-Weights'*x(:,i);
+   Weights = Weights + conj(alpha)*k;
+   P = lambda_inv*(eye(NumRxAntennas)-k*x(:,i)')*P;
+   
    y(:,i) = Weights'*x(:,i);
 end
-
