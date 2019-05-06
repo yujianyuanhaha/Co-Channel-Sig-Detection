@@ -1,6 +1,7 @@
 function int = addInterf(sig, JtoS, intType, int_f, fs)
 
 if(strcmp(intType,'CW'))
+    % i.e. narrowband
     int = exp(1j*2*pi*int_f*(0:length(sig)-1)./fs);
 elseif(strcmp(intType,'FiltNoise'))
     error('Filtered Noise interferer not implemented');
