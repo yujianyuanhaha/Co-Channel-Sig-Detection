@@ -13,7 +13,7 @@ VARY = 'SIR';
 
 SERs = [];
 SER2s = [];
-NN = 2;
+NN = 10;
 
 %SNRdB = [0:8];
 %SIRdB = -10;
@@ -39,7 +39,7 @@ for ii=1:NumVars
     
     for k = 1:NN
         
-        timeOffset = 0;
+        timeOffset = 0
         
         
          opt   = 'BPSK';

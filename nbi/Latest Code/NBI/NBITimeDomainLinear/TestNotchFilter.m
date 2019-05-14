@@ -7,7 +7,7 @@
 % BPSK Mod + Pulse Shaping(RC)
 clear all
 
-PlotFlag = 0;
+PlotFlag = 1;
 
 Nb    = 200000;  % num of bits to be used for testing
 
@@ -30,7 +30,7 @@ f_NBI = 225;
 %PoleRadius = [0.99 0.995 0.999 0.9999];
 PoleRadius = 0.999;
 
-f_offset = 0;
+f_offset = 0.002;
 
 if VARY == 'SIR'            % vary SIR
     NumVars = length(SIRdB);
@@ -109,6 +109,22 @@ for i=1:NumVars
         % create final received signal
         rx = x_ps + nbi + n;  % received signal
         
+% ========== carrier frequency offset ============       
+%         F_offset = 0.005;
+%         len1 = length(rx);
+%         carrierOffset = zeros(1,len1);
+%         for k = 1:len1
+%             carrierOffset(k) = exp(1j*F_offset*2*pi*k);
+%         end
+%         rx = rx.* carrierOffset;
+
+     
+        % ========== carrier frequency phase offset ============  
+%         rx = rx.*exp(-1j*2.745);
+
+         % ========== time offset ============
+         timeOffset = 10;
+         rx = circshift(rx,timeOffset);
         
         
         % ==== narrowband mitigation ==========
@@ -120,6 +136,32 @@ for i=1:NumVars
         end
         
         x_end2 = NotchFilter(rx, r);
+
+        % ========== carrier frequency phase offset ============  
+
+        % x_end2 = x_end2.*exp(1j*2.745);
+        % phase offset pass
+        
+        
+         % ========== time offset ============        
+         x_end2 = circshift(x_end2,-timeOffset);
+         % time offset pass
+        
+        
+        % ======= CFO compensation ===============
+        % presume offset known
+%         F_offset = 0.005;
+%         len1 = length(x_end2);
+%         carrierOffset2 = zeros(1,len1);
+%         for k = 1:len1
+%             carrierOffset2(k) = exp(-1j*F_offset*2*pi*k);
+%         end
+%         x_end2 = x_end2.* carrierOffset2;
+        % PASS freq offset test, once CFO Est block is "truely" implement
+        
+        
+        
+        
         
         x_end = downsample(x_end2,sps);
         

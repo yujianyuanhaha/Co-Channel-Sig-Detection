@@ -52,12 +52,13 @@ SERs = [];
 SER2s = [];
 
 % ======== eval SNR =========
-NN = length(TimeOffset);
+NN = 6;
 
 for k = 1:NN
     
 %         timeOffset = TimeOffset(k);
-    timeOffset = 0
+    timeOffset = 50
+    phaseOffset = pi/4
     
     if opt == 'BPSK'
         TxS = round(rand(1,N))*2-1; % BPSK
@@ -77,36 +78,48 @@ for k = 1:NN
     nbi = sqrt(2)/(10^(SIRdB/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
     n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
     
-%     x1  = x1 + n + nbi;                         % received noisy signal
+    x1  = x1 + n + nbi;                         % received noisy signal
     
-    % -- offset --
-    x1 = x1(1+timeOffset:end);
+    % -- add time offset --
+%     x1 = circshift(x1,timeOffset);
     
-    %     x1 = downsample(x1,sps);
-    
-    if length(x1) < N*sps
-        x1 = [x1, zeros(1,N*sps-length(x1))];
+    % -- add phase offset --
+%      x1 = x1.*exp(j*phaseOffset);
+
+    % -- add freq offset --
+    F_offset = 0.002;
+    len1 = length(x1);
+    carrierOffset = zeros(1,len1);
+    for k = 1:len1
+        carrierOffset(k) = exp(1j*F_offset*2*pi*k);
     end
+    x1 = x1.* carrierOffset;
+
     
     % ========== estimation using CMA =====================
-    [c, X, e] = myCMA(N*sps, L, EqD, x1, R2, mu);
-    sym = c'* X;   % symbol estimation
+    [sb1] = myCMA2(N*sps, L, EqD, x1, R2, mu);
+
     
-    % ======= calculate SER/ BER for BPSK =================
-    H = zeros(L+1,L+ChL+1);
-    for i = 1:L+1
-        H(i,i:i+ChL) = Ch;
-    end  % channel matrix
+    % --- correct time offset -----
+%     sb1 = circshift(sb1,-timeOffset);
+    % verified PASS
     
-    fh   = c'*H; % channel equalizer
-    temp = find(abs(fh)==max(abs(fh))); %find maximum
-    sb1  = sym/(fh(temp));  % normalize the output
+    % -- correct phase offset --
+%     sb1 = sb1.*exp(j*-phaseOffset);
+
+    % -- correct freq offset --
+    len1 = length(sb1);
+    carrierOffset = zeros(1,len1);
+    for k = 1:len1
+        carrierOffset(k) = exp(1j*(-F_offset)*2*pi*k);
+    end
+    sb1 = sb1.* carrierOffset;
     
-    % correct offset
-    sb1_shift = [sb1(timeOffset+1:end), zeros(1,timeOffset)];
-% sb1_shift = circleshift(sb1,-10,2);  % default shift right
+    
+    
+    
     % -- downsample ------
-    sb1 = downsample(sb1_shift,sps);
+    sb1 = downsample(sb1,sps);
     
     if opt == 'BPSK'
         sb1  = sign(real(sb1));  % BPSK detection

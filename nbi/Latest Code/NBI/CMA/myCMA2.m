@@ -32,25 +32,17 @@ end
 
 
 % ======= extend =======
+sym = c'* X;   % symbol estimation
+ChL = 1;
+Ch = [0.8+j*0.1 .9-j*0.2];
 
-        sym = c'* X;   % symbol estimation
-        
-        % ======= calculate SER/ BER for BPSK =================
-        ChL = 1;
-        Ch = [0.8+j*0.1 .9-j*0.2];
-        
-        H = zeros(L+1,L+ChL+1);
-        for i = 1:L+1
-            H(i,i:i+ChL) = Ch;
-        end  % channel matrix
-        
-        fh   = c'*H; % channel equalizer
-        temp = find(abs(fh)==max(abs(fh))); %find maximum
-        sb1  = sym/(fh(temp));  % normalize the output
-        
-        strt = L/2-1;
-        sb1 = [zeros(1,strt),sb1,zeros(1,strt+2)];
+H = zeros(L+1,L+ChL+1);
+for i = 1:L+1
+    H(i,i:i+ChL) = Ch;
+end  % channel matrix
 
-
+fh   = c'*H; % channel equalizer
+temp = find(abs(fh)==max(abs(fh))); %find maximum
+sb1  = sym/(fh(temp));  % normalize the output
 
 end

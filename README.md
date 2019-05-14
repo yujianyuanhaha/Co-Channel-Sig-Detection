@@ -1,5 +1,5 @@
-Joint MAP detection of co-channel signals
-author: Daniel M. Jakubisim, Jet Yu  
+Joint MAP detection of co-channel signals  
+author: Daniel M. Jakubisim, Jet Yu    
 Contact: Jet Yu (jianyuan@vt.edu)  
 
 

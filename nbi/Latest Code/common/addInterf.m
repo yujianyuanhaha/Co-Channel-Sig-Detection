@@ -3,10 +3,23 @@ function int = addInterf(sig, JtoS, intType, int_f, fs)
 if(strcmp(intType,'CW'))
     % i.e. narrowband
     int = exp(1j*2*pi*int_f*(0:length(sig)-1)./fs);
+    
 elseif(strcmp(intType,'FiltNoise'))
-    error('Filtered Noise interferer not implemented');
+%     error('Filtered Noise interferer not implemented');
+    Fs = 100;
+    d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
+    B = design(d);
+    % create white Gaussian noise the length of your signal
+    x = randn(length(sig),1);
+    % create the band-limited Gaussian noise
+    int = filter(B,x);    
+    
 elseif(strcmp(intType,'Chirp'))
-    error('Chirp Interference not implemented...');
+%     error('Chirp Interference not implemented...');
+    for k = 1:length(sig)
+        int_f = int(k/100)*100;
+        int = exp(1j*2*pi*int_f*k./fs);
+    end
 else
     error('Unimplemented interference type');
 end
