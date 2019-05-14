@@ -4,10 +4,11 @@ function [minBER] = psk_mod(sig, bitsPerSym, sampsPerSym, eBW, bits, trim)
     end
     M = 2^bitsPerSym;
 % % % % RX filter
+% match filter
     rcos = rcosdesign(eBW, 8, sampsPerSym, 'sqrt');
     sig = filter(rcos,1,sig);    
-
     sig = sig(trim+1:end);  %trim off the beginning "trim" samples of the signal
+
 %     carrier recovery goes here
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -24,6 +25,7 @@ function [minBER] = psk_mod(sig, bitsPerSym, sampsPerSym, eBW, bits, trim)
     
 % phase offset (if not accounted for in carrier recovery)
     symPhase = angle(syms);
+    
 %     symPhaseOrig = symPhase;
 %     symPhase(symPhase < 0) = symPhase(symPhase<0) + 2*pi;
 %     symPhase = wrap2pi(symPhase*M);

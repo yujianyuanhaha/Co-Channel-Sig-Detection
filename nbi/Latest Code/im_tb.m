@@ -1,4 +1,4 @@
-close all
+% close all
 clear variables
 
 addpath('./common/','./NBI/FD_nonlinear/','./NBI/CMA/','./NBI/NBITimeDomainLinear/');
@@ -40,7 +40,7 @@ rChan = channel(sig, EbNo, chan, sps, bitsPerSym);
 int = addInterf(sig, JtoS, intType, int_f, fs);  %send it sig so we calculate J/S vs signal power, not signal + noise power
 r = rChan  + int;
 % r = rChan;
-% r = r.*exp(-1j*2.745); % offset?
+% r = r.*exp(-1j*2.745); % constant phase offset
 
 % Mitigation
 if(strcmp(method,'FFT-Thresh'))
@@ -48,11 +48,14 @@ if(strcmp(method,'FFT-Thresh'))
     threshold = calculate_threshold(r);
     % apply the threshold for nonlinear NBI mitigation
     rClean = FreqDomainCancel(r, threshold);
-elseif(strcmp(method,'CMA'))    
+    
+elseif(strcmp(method,'CMA')) 
+    % paras
     L = 20;
     EqD= 11;
     R2 = 1;
     mu = 0.001;    
+    % 
     rClean = myCMA2(N*sps, L, EqD, r, R2, mu);  
     
 elseif(strcmp(method,'NotchFilter')) 
