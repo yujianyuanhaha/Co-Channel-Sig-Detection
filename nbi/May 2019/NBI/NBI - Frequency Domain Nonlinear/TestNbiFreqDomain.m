@@ -1,4 +1,4 @@
-% this script tests a notch filter for NBI mitigation.
+% this script tests three different Matlab NBI techniques.
 % Currently only one is working effectively, which is a frequency domain
 % non-linear cancellation technique (option 'fftThr').  The other two
 % techniques are still being developed.
@@ -7,40 +7,45 @@
 % BPSK Mod + Pulse Shaping(RC)
 clear all
 
-PlotFlag = 1;
+PlotFlag = 0;
+
+opt   = 'fftThr';  %Two other otptions (opt = 'tranNF' and
+% opt   = 'kayEst') are under development
+
 
 Nb    = 200000;  % num of bits to be used for testing
+%fft_size = [200,2000,20000,200000];% size of the fft used - effects frequency resolution
+fft_size = 200000;
 
 % this script can vary eitehr SNR or SIR.
 % if you vary SNR, only the first SIR value will be used
 % if you vary SIR only the first SNR value will be used.
 % Note taht the SNR and SIR values are specified in dB
 
-VARY = 'SNR';  % either 'SNR' or 'SIR' 
-
-%SNRdB = [0:8];
-%SIRdB = -10;
+VARY = 'FNB';  % either 'SNR' or 'SIR' or 'FFT' (fft size) or 'FRQ' (frequency offset)
+               % 'FNB' - freqeuncy of the interferer (relative to desired
+               % signal)
+SNRdB = [0:8];
+SIRdB = 0;
 % to vary SIR use the lines below
-% SNRdB = 7;
-SNRdB = [-20:4:20];
+SNRdB = 7;
 SIRdB = [-20:4:20];
-%SIRdB = -10;
 
-%f_NBI = [0,20,200,1000,2000,4000, 6000, 8000];
-f_NBI = 225;
-%PoleRadius = [0.99 0.995 0.999 0.9999];
-PoleRadius = 0.999;
+f_NBI = [0:255:255*10];
 
-f_offset = 0.002;
+DownSample = 'AFTER';  %'BEFOR' or 'AFTER';
+FreqOffset = 0:100:1000;      % frequency offset of desired signal at cancellation
 
-if VARY == 'SIR'            % vary SIR
+if VARY == 'SIR'
     NumVars = length(SIRdB);
-elseif VARY == 'SNR'        % vary SNR
+elseif VARY == 'SNR'
     NumVars = length(SNRdB);
-elseif VARY == 'FNB'        % vary narrowband interference frequency
+elseif VARY == 'FFT'
+    NumVars = length(fft_size);
+elseif VARY == 'FRQ'
+    NumVars = length(FreqOffset);
+elseif VARY == 'FNB'
     NumVars = length(f_NBI);
-elseif VARY == 'PlR'        % vary the pole radius
-    NumVars = length(PoleRadius);
 end
 
 for i=1:NumVars
@@ -48,10 +53,18 @@ for i=1:NumVars
     NumErrors(i) = 0;
     NumErrorsNoProc(i) = 0;
     
+    if VARY == 'FFT'
+        FFTSize = fft_size(i);
+    else
+        FFTSize = fft_size(1);
+    end
     
-       
+    NumLoops = ceil(Nb/FFTSize);
+    
+    for k=1:NumLoops
+        
         % create data symbols
-        xb    = sign(randn([1,Nb]));  % BPSK
+        xb    = sign(randn([1,FFTSize]));  % BPSK
         x_mod = xb;
         
         
@@ -74,8 +87,16 @@ for i=1:NumVars
         fs = 10000;  % sample rate  - this only matters relative to the NBI
         % carrier frequency below
         dt = 1/fs;  %  min time step duration
-        t  = 1:Nb*sps;
+        t  = 1:FFTSize*sps;
 
+        % apply carrier offset
+        if VARY == 'FRQ'
+            freq_offset = FreqOffset(i);
+        else
+            freq_offset = FreqOffset(1);
+        end
+        carrier_offset = exp(j*(2*pi*freq_offset*t+rand*2*pi));
+        x_ps = x_ps.*carrier_offset;
 
         
         %====== additive nbi signal (on the channel) ====
@@ -105,91 +126,51 @@ for i=1:NumVars
             SNR = 10^(SNRdB(1)/10);
         end
         std = 1/sqrt(2*SNR);
-        n = std * randn(1, Nb*sps) + j*std*randn(1,Nb*sps);
+        n = std * randn(1, FFTSize*sps) + j*std*randn(1,FFTSize*sps);
         
         % create final received signal
-        optInt = 'nbi'
-
-        if strcmp(optInt,'nbi')
-            intf = nbi;
-
-        elseif strcmp(optInt,'filterNoise')
-                Fs = 100;
-                d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
-                B = design(d);
-                % create white Gaussian noise the length of your signal
-                x = randn(1,length(n))+1j*randn(1,length(n));
-                % create the band-limited Gaussian noise
-                intf = filter(B,x);
-
-        elseif  strcmp(optInt,'Chrip')
-                K = 100;
-                for k2 = 1:length(n)
-                    int_f = round(k2/K)*K;
-                    intf = exp(1j*2*pi*int_f*k2);
-                end
+        rx = x_ps + nbi + n;  % received signal
+        
+        
+        if DownSample == 'BEFOR'
+            % downsample to one sample/symbol
+            x_ds = downsample(rx, sps);
+            carrier_offset = downsample(carrier_offset,sps);
         else
-             error('Unimplemented interference type');
+            x_ds = rx;
         end
-    
-    
-        rx = x_ps + intf + n;  % received signal
-        
-% ========== carrier frequency offset ============       
-%         F_offset = 0.005;
-%         len1 = length(rx);
-%         carrierOffset = zeros(1,len1);
-%         for k = 1:len1
-%             carrierOffset(k) = exp(1j*F_offset*2*pi*k);
-%         end
-%         rx = rx.* carrierOffset;
-
-     
-        % ========== carrier frequency phase offset ============  
-%         rx = rx.*exp(-1j*2.745);
-
-         % ========== time offset ============
-%          timeOffset = 10;
-%          rx = circshift(rx,timeOffset);
-        
         
         % ==== narrowband mitigation ==========
-        
-        if VARY == 'PlR'
-            r = PoleRadius(i);
+        % currently only first option is functioning properly
+        if opt == 'fftThr'
+            % === method 1: fft threshold
+            %threshold = max(abs(fft(x_ps)));
+            % calculate the appropriate threshold
+            threshold = calculate_threshold(x_ds);
+            % apply the threshold for nonlinear NBI mitigation
+            x_end = FreqDomainCancel(x_ds, threshold);
+        elseif opt == 'tranNF'
+            % === method 2: trained notch filter ========
+            %      x_end = trainNF(trainInput, trainOutput, testInput, FirOrder);
+        elseif opt == 'kayEst'
+            % === method 3: Kay Estimation ==========
+            f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
+            X = fft(x_ds);
+            location = f_h/fs*length(x_ds)/2;
+            X(location) = 1/2*( X(location-1)+X(location+1) ); % smooth
+            X(length(X)-location) = 1/2*( X(length(X)-location-1)...
+                +X(length(X)-location+1) );
+            x_end = real(ifft(X));
         else
-            r = PoleRadius(1);
+            disp('wrong opt, choose among fftThr,tranNF,kayEst');
         end
         
-        x_end2 = NotchFilter(rx, r);
-
-        % ========== carrier frequency phase offset ============  
-
-        % x_end2 = x_end2.*exp(1j*2.745);
-        % phase offset pass
+        % remove carrier offset
+        x_end = x_end.*conj(carrier_offset);
         
-        
-         % ========== time offset ============        
-%          x_end2 = circshift(x_end2,-timeOffset);
-         % time offset pass
-        
-        
-        % ======= CFO compensation ===============
-        % presume offset known
-%         F_offset = 0.005;
-%         len1 = length(x_end2);
-%         carrierOffset2 = zeros(1,len1);
-%         for k = 1:len1
-%             carrierOffset2(k) = exp(-1j*F_offset*2*pi*k);
-%         end
-%         x_end2 = x_end2.* carrierOffset2;
-        % PASS freq offset test, once CFO Est block is "truely" implement
-        
-        
-        
-        
-        
-        x_end = downsample(x_end2,sps);
+        if DownSample == 'AFTER'
+            x_end = downsample(x_end,sps);
+        end
         
         % ======= evaluation ======
         
@@ -200,20 +181,19 @@ for i=1:NumVars
         % before data detection
         
         NumErrors(i) = NumErrors(i) + sum(xb ~= x_h);
-        %if DownSample == 'AFTER'
-        %    x_ds = downsample(rx.*conj(carrier_offset), sps);      
-        %else
-            x_ds = downsample(rx,sps);
-        %end
+        if DownSample == 'AFTER'
+            x_ds = downsample(rx.*conj(carrier_offset), sps);      
+        else
+            x_ds = x_ds.*conj(carrier_offset);
+        end
         NumErrorsNoProc(i) = NumErrorsNoProc(i) + sum(xb ~= sign(real(x_ds)));
-   
+    end
     
-    BER(i) = NumErrors(i)/(Nb); % determine BER
+    BER(i) = NumErrors(i)/(FFTSize*NumLoops); % determine BER
     % this is the BER without any cancellation
-    BER_no_processing(i) = NumErrorsNoProc(i)/(Nb);
+    BER_no_processing(i) = NumErrorsNoProc(i)/(FFTSize*NumLoops);
     % ideal theoretical performance (without cancellation)
     theory(i) = q(sqrt(2*SNR));
-    
     if i == NumVars
         display(' ')
         display(['BER with no processing = ',num2str(BER_no_processing(i))])
@@ -221,6 +201,7 @@ for i=1:NumVars
         display(['BER (theory) = ',num2str(theory(i))])
         display(' ')
     end
+        
 end
 
 if PlotFlag ~= 0
@@ -244,27 +225,36 @@ if PlotFlag ~= 0
         xlabel('SNR (dB)')
         ylabel('BER')
         legend('Simulation','Ideal Theory','Without Interf. Cancel.')
-        %axis([0 8 1e-5 1])
+        axis([0 8 1e-5 1])
+    elseif VARY == 'FFT'
+        loglog(fft_size, BER,'b-s')
+        hold on
+        semilogy(fft_size, theory,'r-x')
+        semilogy(fft_size, BER_no_processing,'k-o')
+        xlabel('FFT Size')
+        ylabel('BER')
+        legend('Simulation','Ideal Theory','Without Interf. Cancel.')
+        axis([0 200000 1e-5 1])
+    elseif VARY == 'FRQ'
+        semilogy(FreqOffset/fs, BER,'b-s')
+        hold on
+        semilogy(FreqOffset/fs, theory,'r-x')
+        semilogy(FreqOffset/fs, BER_no_processing,'k-o')
+        xlabel('Frequency Offset / Samping Frequency')
+        ylabel('BER')
+        legend('Simulation','Ideal Theory','Without Interf. Cancel.')
+        axis([0 0.1 1e-5 1])
     elseif VARY == 'FNB'
         semilogy(f_NBI/fs, BER,'b-s')
         hold on
         semilogy(f_NBI/fs, theory,'r-x')
         semilogy(f_NBI/fs, BER_no_processing,'k-o')
-        xlabel('Narrowband Interference Frequency (as fraction of sampling frequency)')
+        xlabel('Interferer Frequency / Samping Frequency')
         ylabel('BER')
         legend('Simulation','Ideal Theory','Without Interf. Cancel.')
-        axis([0 1 1e-5 1])
-    elseif VARY == 'PlR'
-        loglog(PoleRadius, BER,'b-s')
-        hold on
-        semilogy(PoleRadius, theory,'r-x')
-        semilogy(PoleRadius, BER_no_processing,'k-o')
-        xlabel('Pole Radius r')
-        ylabel('BER')
-        legend('Simulation','Ideal Theory','Without Interf. Cancel.')
-        axis([0.99 1 1e-5 1])
-        
+        axis([0 0.2 1e-5 1])
     end
 end
 
 STATUS = 'PASSED';
+

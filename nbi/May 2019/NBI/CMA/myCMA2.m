@@ -16,7 +16,9 @@ for i = 1:K
 end
 
 e = zeros(1,K);   % to store the error signal
-c = zeros(L+1,1); % weight
+% c = zeros(L+1,1); % weight
+c = rand(L+1,1);
+% ----- ? ---------
 c(EqD) = 1;       % initial condition
 
 for i = 1:K

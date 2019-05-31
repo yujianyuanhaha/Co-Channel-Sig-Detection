@@ -21,7 +21,6 @@ VARY = 'SNR';  % either 'SNR' or 'SIR'
 %SNRdB = [0:8];
 %SIRdB = -10;
 % to vary SIR use the lines below
-% SNRdB = 7;
 SNRdB = [-20:4:20];
 SIRdB = [-20:4:20];
 %SIRdB = -10;
@@ -31,7 +30,7 @@ f_NBI = 225;
 %PoleRadius = [0.99 0.995 0.999 0.9999];
 PoleRadius = 0.999;
 
-f_offset = 0.002;
+f_offset = 0;
 
 if VARY == 'SIR'            % vary SIR
     NumVars = length(SIRdB);
@@ -95,7 +94,8 @@ for i=1:NumVars
         % random phase of the NBI
         phi_nbi = 2*pi*rand;
         % NBI at complex baseband
-        nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi)-j*A_nbi * sin(w_nbi*t*dt + phi_nbi);
+        nbi1 = A_nbi * cos(w_nbi*t*dt + phi_nbi)-j*A_nbi * sin(w_nbi*t*dt + phi_nbi);
+        nbi2 = addInterf(x_ps, 50, 'CW', fs/100, fs*sps);
         
         
         % ==== additive white noise ====
@@ -108,49 +108,8 @@ for i=1:NumVars
         n = std * randn(1, Nb*sps) + j*std*randn(1,Nb*sps);
         
         % create final received signal
-        optInt = 'nbi'
-
-        if strcmp(optInt,'nbi')
-            intf = nbi;
-
-        elseif strcmp(optInt,'filterNoise')
-                Fs = 100;
-                d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
-                B = design(d);
-                % create white Gaussian noise the length of your signal
-                x = randn(1,length(n))+1j*randn(1,length(n));
-                % create the band-limited Gaussian noise
-                intf = filter(B,x);
-
-        elseif  strcmp(optInt,'Chrip')
-                K = 100;
-                for k2 = 1:length(n)
-                    int_f = round(k2/K)*K;
-                    intf = exp(1j*2*pi*int_f*k2);
-                end
-        else
-             error('Unimplemented interference type');
-        end
-    
-    
-        rx = x_ps + intf + n;  % received signal
+        rx = x_ps + nbi2 + n;  % received signal
         
-% ========== carrier frequency offset ============       
-%         F_offset = 0.005;
-%         len1 = length(rx);
-%         carrierOffset = zeros(1,len1);
-%         for k = 1:len1
-%             carrierOffset(k) = exp(1j*F_offset*2*pi*k);
-%         end
-%         rx = rx.* carrierOffset;
-
-     
-        % ========== carrier frequency phase offset ============  
-%         rx = rx.*exp(-1j*2.745);
-
-         % ========== time offset ============
-%          timeOffset = 10;
-%          rx = circshift(rx,timeOffset);
         
         
         % ==== narrowband mitigation ==========
@@ -162,32 +121,6 @@ for i=1:NumVars
         end
         
         x_end2 = NotchFilter(rx, r);
-
-        % ========== carrier frequency phase offset ============  
-
-        % x_end2 = x_end2.*exp(1j*2.745);
-        % phase offset pass
-        
-        
-         % ========== time offset ============        
-%          x_end2 = circshift(x_end2,-timeOffset);
-         % time offset pass
-        
-        
-        % ======= CFO compensation ===============
-        % presume offset known
-%         F_offset = 0.005;
-%         len1 = length(x_end2);
-%         carrierOffset2 = zeros(1,len1);
-%         for k = 1:len1
-%             carrierOffset2(k) = exp(-1j*F_offset*2*pi*k);
-%         end
-%         x_end2 = x_end2.* carrierOffset2;
-        % PASS freq offset test, once CFO Est block is "truely" implement
-        
-        
-        
-        
         
         x_end = downsample(x_end2,sps);
         
@@ -244,7 +177,7 @@ if PlotFlag ~= 0
         xlabel('SNR (dB)')
         ylabel('BER')
         legend('Simulation','Ideal Theory','Without Interf. Cancel.')
-        %axis([0 8 1e-5 1])
+        axis([0 8 1e-5 1])
     elseif VARY == 'FNB'
         semilogy(f_NBI/fs, BER,'b-s')
         hold on

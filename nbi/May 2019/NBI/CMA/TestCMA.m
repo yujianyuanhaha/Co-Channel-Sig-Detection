@@ -9,19 +9,19 @@
 
 clear all;
 
-VARY = 'SIR';
+VARY = 'SNR';
 
 SERs = [];
 SER2s = [];
-NN = 10;
+NN = 20;
 
 %SNRdB = [0:8];
 %SIRdB = -10;
 % to vary SIR use the lines below
-SNRdB = [0:10];
-SNRdB = 4;
-SIRdB = [0:4:20];
-%SIRdB = 2;
+SNRdB = [-20:4:20];
+% SNRdB = 4;
+% SIRdB = [-20:4:20];
+SIRdB = 10;
 
 %f_NBI = [0,20,200,1000,2000,4000, 6000, 8000];
 %f_NBI = 225;
@@ -39,7 +39,7 @@ for ii=1:NumVars
     
     for k = 1:NN
         
-        timeOffset = 0
+        timeOffset = 0;
         
         
          opt   = 'BPSK';
@@ -101,38 +101,7 @@ for ii=1:NumVars
             nbi = sqrt(2)/(10^(SIRdB(1)/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
             n   = n/norm(n) * 10^(-SNRdB(ii)/10) * norm(x);  % scale noise power
         end
-        
-        
-        optInt = 'filterNoise'
-        
-        if strcmp(optInt,'nbi')
-            int = nbi;
-            
-        elseif strcmp(optInt,'filterNoise')
-                Fs = 100;
-                d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
-                B = design(d);
-                % create white Gaussian noise the length of your signal
-                x = randn(1,length(n));
-                % create the band-limited Gaussian noise
-                int = filter(B,x);
-                
-                
-        elseif  strcmp(optInt,'Chrip')
-                K = 100;
-                for k2 = 1:length(n)
-                    int_f = int(k2/K)*K;
-                    int = exp(1j*2*pi*int_f*k2./fs);
-                end
-        else
-             error('Unimplemented interference type');
-        end
-            
-           
-                
-            
-        
-        x1  = x1 + n + int;                         % received noisy signal
+        x1  = x1 + n + nbi;                         % received noisy signal
         
         % -- offset --
         x1 = x1(1+timeOffset:end);
@@ -143,34 +112,25 @@ for ii=1:NumVars
             x1 = [x1, zeros(1,N-length(x1))];
         end
         
+        % ========== estimation using CMA =====================
+        [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
+        sym = c'* X;   % symbol estimation
         
+        % ======= calculate SER/ BER for BPSK =================
+        H = zeros(L+1,L+ChL+1);
+        for i = 1:L+1
+            H(i,i:i+ChL) = Ch;
+        end  % channel matrix
         
-%         % ========== estimation using CMA =====================
-%         [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
-%         sym = c'* X;   % symbol estimation
-%         
-%         % ======= calculate SER/ BER for BPSK =================
-%         H = zeros(L+1,L+ChL+1);
-%         for i = 1:L+1
-%             H(i,i:i+ChL) = Ch;
-%         end  % channel matrix
-%         
-%         fh   = c'*H; % channel equalizer
-%         temp = find(abs(fh)==max(abs(fh))); %find maximum
-%         sb1  = sym/(fh(temp));  % normalize the output
-        sb1 = myCMA2(N, L, EqD, x1, R2, mu);
-        
-        
-        
-        
-        
+        fh   = c'*H; % channel equalizer
+        temp = find(abs(fh)==max(abs(fh))); %find maximum
+        sb1  = sym/(fh(temp));  % normalize the output
         if opt == 'BPSK'
             sb1  = sign(real(sb1));  % BPSK detection
         else
             sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
         end
         strt = L/2-1;
-%         sb2 = sb1 - TxS;
         sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
         SER(k)  = length(find(sb2~=0))/length(sb2);% SER calculations
         % disp(SER);

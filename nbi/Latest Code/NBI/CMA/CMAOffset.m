@@ -11,8 +11,11 @@ clear all;
 
 % TimeOffset = 0:10;
 TimeOffset = 1;
-% opt   = 'QPSK';
-opt   = 'BPSK';
+opt   = 'QPSK';
+% opt   = 'BPSK'
+optInt = 'nbi'
+
+
 % opt
 % Signal to noise ratio(dB)
 SIRdB = 20;
@@ -57,8 +60,8 @@ NN = 6;
 for k = 1:NN
     
 %         timeOffset = TimeOffset(k);
-    timeOffset = 50
-    phaseOffset = pi/4
+    timeOffset = 50;
+    phaseOffset = pi/4;
     
     if opt == 'BPSK'
         TxS = round(rand(1,N))*2-1; % BPSK
@@ -78,7 +81,34 @@ for k = 1:NN
     nbi = sqrt(2)/(10^(SIRdB/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
     n   = n/norm(n) * 10^(-SNRdB/10) * norm(x);  % scale noise power
     
-    x1  = x1 + n + nbi;                         % received noisy signal
+    
+
+
+    if strcmp(optInt,'nbi')
+        intf = nbi;
+
+    elseif strcmp(optInt,'filterNoise')
+            Fs = 100;
+            d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
+            B = design(d);
+            % create white Gaussian noise the length of your signal
+            x = randn(2,length(n));
+            % create the band-limited Gaussian noise
+            intf = filter(B,x(1,:)) + 1j* filter(B,x(2,:));
+
+    elseif  strcmp(optInt,'Chrip')
+            K = 100;
+            for k2 = 1:length(n)
+                int_f = round(k2/K)*K;
+                intf = exp(1j*2*pi*int_f*k2);
+            end
+    else
+         error('Unimplemented interference type');
+    end
+        
+        
+    
+    x1  = x1 + n + intf;                         % received noisy signal
     
     % -- add time offset --
 %     x1 = circshift(x1,timeOffset);
@@ -87,13 +117,13 @@ for k = 1:NN
 %      x1 = x1.*exp(j*phaseOffset);
 
     % -- add freq offset --
-    F_offset = 0.002;
-    len1 = length(x1);
-    carrierOffset = zeros(1,len1);
-    for k = 1:len1
-        carrierOffset(k) = exp(1j*F_offset*2*pi*k);
-    end
-    x1 = x1.* carrierOffset;
+%     F_offset = 0.002;
+%     len1 = length(x1);
+%     carrierOffset = zeros(1,len1);
+%     for k = 1:len1
+%         carrierOffset(k) = exp(1j*F_offset*2*pi*k);
+%     end
+%     x1 = x1.* carrierOffset;
 
     
     % ========== estimation using CMA =====================
@@ -108,12 +138,12 @@ for k = 1:NN
 %     sb1 = sb1.*exp(j*-phaseOffset);
 
     % -- correct freq offset --
-    len1 = length(sb1);
-    carrierOffset = zeros(1,len1);
-    for k = 1:len1
-        carrierOffset(k) = exp(1j*(-F_offset)*2*pi*k);
-    end
-    sb1 = sb1.* carrierOffset;
+%     len1 = length(sb1);
+%     carrierOffset = zeros(1,len1);
+%     for k = 1:len1
+%         carrierOffset(k) = exp(1j*(-F_offset)*2*pi*k);
+%     end
+%     sb1 = sb1.* carrierOffset;
     
     
     
@@ -126,22 +156,14 @@ for k = 1:NN
     else
         sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
     end
-    strt = L/2-1;
     
     
-    
-    
-    %     sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
-    temp = TxS(strt+1:end);
-    %     temp2 = sb1(end-length(temp)+1:end);
-    % left shift 10
-    %     temp2 = [temp2(11:end),zeros(1,10)];
-    sb1 = [sb1(11:end),zeros(1,10)];
-    temp2 = sb1(1:length(temp));
-    %     sb2  = temp2 - temp;
-    sb2 = temp2 - temp;
-    SER  = length(find(sb2~=0))/length(sb2);% SER calculations
-    disp(SER);
+
+    TxS = TxS(L/2:end);
+    sb1 = circshift(sb1,-L/2);
+    sb1 = sb1(1:length(TxS));
+    diff = sb1 - TxS;
+    SER  = length(find(diff~=0))/length(diff);
     
     SERs = [SERs , SER];
     

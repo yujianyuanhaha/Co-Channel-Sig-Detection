@@ -14,7 +14,7 @@ intType = 'CW';
 % intType = 'FiltNoise';
 % intType = 'Chirp';
 int_f = fd/100;
-JtoS = 50;
+JtoS = 20;
 int_bw = 100;  %ignored for CW
 EbNo = 10;  % SNR ratio
 % EbNo = 20;
@@ -23,8 +23,8 @@ eBW = 0.25;
 
 % mitigation method
 % method = 'FFT-Thresh'
-method = 'NotchFilter'
-% method = 'CMA'
+% method = 'NotchFilter'  % notice it fail for strong inference power, set JtoS = 20
+method = 'CMA'
 
 
 % generate TX signal
@@ -52,8 +52,8 @@ if(strcmp(method,'FFT-Thresh'))
 elseif(strcmp(method,'CMA')) 
     % paras
     L = 20;
-    EqD= 11;
-    R2 = 1;
+    EqD = 11;
+    R2 = 1; % for BPSK
     mu = 0.001;    
     % 
     rClean = myCMA2(N*sps, L, EqD, r, R2, mu);  
@@ -67,6 +67,30 @@ end
 % DrawPSD([sig;rChan;r;rClean],fs,{'Gold','Channel','Rx','Mitigated'},4096);
 
 
+
+% demod for CMA
+if strcmp(method,'CMA')
+    sb1 = r;
+    TxS = bits;
+    opt = 'BPSK';
+    
+    sb1 = downsample(sb1,sps);
+
+    if opt == 'BPSK'
+        sb1  = sign(real(sb1));  % BPSK detection
+    else
+        sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
+    end
+
+    TxS = TxS(L/2:end);
+    sb1 = circshift(sb1,-L/2);
+    sb1 = sb1(1:length(TxS));
+    diff = sb1 - TxS;
+    SER  = length(find(diff~=0))/length(diff)
+
+end
+
 % trim = 5000 here
 unMitBER = psk_demod(r, bitsPerSym, sps, eBW,bits,5000)
 MitBER = psk_demod(rClean, bitsPerSym, sps, eBW,bits,5000)
+% MitBER = psk_demodNodown(rClean, bitsPerSym, eBW,bits,5000)

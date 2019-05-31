@@ -1,4 +1,4 @@
-function [sb1] = myCMA2(N, L, EqD, x1, R2, mu)
+function [c, X, e] = myCMA(N, L, EqD, x1, R2, mu)
 % input : N - num of sample
 %         L - length of filter
 %       EqD - equalization delay
@@ -22,33 +22,12 @@ c(EqD) = 1;       % initial condition
 for i = 1:K
     e(i) = abs(c'*X(:,i))^2-R2 ;  % initial error
     if abs(e(i)) > 1000           % aviod bugs/ explosion
-        disp('EXPLODE');
+%         disp('EXPLODE');
         e(i) = 1000;
         break;
     end
     c = c-mu*2*e(i)*X(:,i)*X(:,i)'*c ;   % update equalizer co-efficients
     c(EqD) = 1;
 end
-
-
-% ======= extend =======
-sym = c'* X;   % symbol estimation
-ChL = 1;
-Ch = [0.8+j*0.1 .9-j*0.2];
-% Ch = [1.0 1.0];
-
-H = zeros(L+1,L+ChL+1);
-for i = 1:L+1
-    H(i,i:i+ChL) = Ch;
-end  % channel matrix
-
-fh   = c'*H; % channel equalizer
-temp = find(abs(fh)==max(abs(fh))); %find maximum
-if length(temp) > 1
-    temp = temp(1);
-end    
-sb1  = sym/(fh(temp));  % normalize the output'
-% align
-sb1 = [zeros(1,length(x1)-length(sb1)),sb1];
 
 end

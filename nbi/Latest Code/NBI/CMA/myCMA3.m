@@ -1,4 +1,4 @@
-function [sb1] = myCMA2(N, L, EqD, x1, R2, mu)
+function [sb1] = myCMA2(N, L, EqD, x1, R2, mu,sps)
 % input : N - num of sample
 %         L - length of filter
 %       EqD - equalization delay
@@ -35,7 +35,6 @@ end
 sym = c'* X;   % symbol estimation
 ChL = 1;
 Ch = [0.8+j*0.1 .9-j*0.2];
-% Ch = [1.0 1.0];
 
 H = zeros(L+1,L+ChL+1);
 for i = 1:L+1
@@ -44,11 +43,6 @@ end  % channel matrix
 
 fh   = c'*H; % channel equalizer
 temp = find(abs(fh)==max(abs(fh))); %find maximum
-if length(temp) > 1
-    temp = temp(1);
-end    
-sb1  = sym/(fh(temp));  % normalize the output'
-% align
-sb1 = [zeros(1,length(x1)-length(sb1)),sb1];
+sb1  = sym/(fh(temp));  % normalize the output
 
 end

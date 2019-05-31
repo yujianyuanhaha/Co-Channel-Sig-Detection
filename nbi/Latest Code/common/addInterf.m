@@ -10,7 +10,7 @@ elseif(strcmp(intType,'FiltNoise'))
     d = fdesign.lowpass('Fp,Fst,Ap,Ast',6,10,0.5,40,Fs);
     B = design(d);
     % create white Gaussian noise the length of your signal
-    x = randn(length(sig),1);
+    x = randn(length(sig),1) + 1j*randn(length(sig),1);
     % create the band-limited Gaussian noise
     int = filter(B,x);    
     
