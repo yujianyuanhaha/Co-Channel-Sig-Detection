@@ -6,7 +6,7 @@ addpath('./common/','./NBI/FD_nonlinear/','./NBI/CMA/','./NBI/NBITimeDomainLinea
 N = 1e6;
 % N = 1e4;
 bitsPerSym = 1;
-fd = 100e3;  %symbol rate
+fd =    100e3;  %symbol rate
 sps = 4;  %samples per symbol
 fs = fd*sps; %sample rate
 chan = 'AWGN';

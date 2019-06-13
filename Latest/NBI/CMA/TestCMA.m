@@ -9,7 +9,7 @@
 
 clear all;
 
-VARY = 'SIR';
+VARY = 'SNR';
 
 SERs = [];
 SER2s = [];

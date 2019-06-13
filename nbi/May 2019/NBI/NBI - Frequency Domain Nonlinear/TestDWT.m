@@ -9,7 +9,9 @@ clear all
 
 PlotFlag = 1;
 
-opt   = 'fftThr';  %Two other otptions (opt = 'tranNF' and
+optIntf = 'Chirp';
+
+opt   = 'DWT';  %Two other otptions (opt = 'tranNF' and
 % opt   = 'kayEst') are under development
 
 
@@ -26,10 +28,10 @@ VARY = 'SNR';  % either 'SNR' or 'SIR' or 'FFT' (fft size) or 'FRQ' (frequency o
                % 'FNB' - freqeuncy of the interferer (relative to desired
                % signal)
 SNRdB = [0:8];
-SIRdB = 0;
+SIRdB = -2;
 % to vary SIR use the lines below
 % SNRdB = 7;
-SIRdB = [-20:4:20];
+% SIRdB = [-20:4:20];
 
 f_NBI = [0:255:255*10];
 
@@ -116,8 +118,14 @@ for i=1:NumVars
         % random phase of the NBI
         phi_nbi = 2*pi*rand;
         % NBI at complex baseband
-        nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi)-j*A_nbi * sin(w_nbi*t*dt + phi_nbi);
-        
+        if strcmp(optIntf,'tone')
+            nbi = A_nbi * cos(w_nbi*t*dt + phi_nbi)-j*A_nbi * sin(w_nbi*t*dt + phi_nbi);
+        else
+            f_s = 500/10000;
+            f_t = 2000/10000;
+            T = length(FFTSize*sps);
+            nbi = A_nbi* myChirp(f_s,f_t,T);
+        end
         
         % ==== additive white noise ====
         if VARY == 'SNR'
@@ -142,17 +150,17 @@ for i=1:NumVars
         
         % ==== narrowband mitigation ==========
         % currently only first option is functioning properly
-        if opt == 'fftThr'
+        if strcmp(opt,'fftThr')
             % === method 1: fft threshold
             %threshold = max(abs(fft(x_ps)));
             % calculate the appropriate threshold
             threshold = calculate_threshold(x_ds);
             % apply the threshold for nonlinear NBI mitigation
             x_end = FreqDomainCancel(x_ds, threshold);
-        elseif opt == 'tranNF'
+        elseif strcmp(opt,'tranNF')
             % === method 2: trained notch filter ========
             %      x_end = trainNF(trainInput, trainOutput, testInput, FirOrder);
-        elseif opt == 'kayEst'
+        elseif strcmp(opt,'kayEst')
             % === method 3: Kay Estimation ==========
             f_h = kayEst(rx,fs);  % NOTICE x_ds would fail
             X = fft(x_ds);
@@ -162,7 +170,9 @@ for i=1:NumVars
                 +X(length(X)-location+1) );
             x_end = real(ifft(X));
         else
-            disp('wrong opt, choose among fftThr,tranNF,kayEst');
+%             disp('wrong opt, choose among fftThr,tranNF,kayEst');
+        % dwt
+        x_end = x_ds - myDWT(x_ds);
         end
         
         % remove carrier offset
@@ -226,6 +236,7 @@ if PlotFlag ~= 0
         ylabel('BER')
         legend('Simulation','Ideal Theory','Without Interf. Cancel.')
         axis([0 8 1e-5 1])
+        title(optIntf)
     elseif VARY == 'FFT'
         loglog(fft_size, BER,'b-s')
         hold on

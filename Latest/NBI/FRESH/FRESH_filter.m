@@ -81,7 +81,7 @@ for i=delay+1:length(sig)-delay
     
 end
 
-align_and_plot(SOI,y,1);
+% align_and_plot(SOI,y,1);
 
 r_out = y;%(delay+1:end);
 % r_out = sig(1:length(r_out))-r_out;

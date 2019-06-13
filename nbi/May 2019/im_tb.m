@@ -4,14 +4,14 @@ clear all;
 clc;
 
 %====================Add path==========================%
-addpath("common");
+addpath('common');
 %addpath('.\NBI\FD_nonlinear');
-addpath("NBI/NBI - DSSS");
-addpath("NBI/CMA");
-addpath("NBI/NBI - Frequency Domain Nonlinear");
-addpath("NBI/CMA");
-addpath("NBI/NBI - Time Domain Linear");
-addpath("NBI/TD_linear");
+addpath('NBI/NBI - DSSS');
+addpath('NBI/CMA');
+addpath('NBI/NBI - Frequency Domain Nonlinear');
+addpath('NBI/CMA');
+addpath('NBI/NBI - Time Domain Linear');
+addpath('NBI/TD_linear');
 
 %====================Initial parameters=====================%
 N = 1e5;
@@ -22,7 +22,7 @@ fs = fd*sps; %sample rate
 chan = 'AWGN';
 
 
-intType = 'CW'; 
+intType = 'Chirp'; 
 int_f = fd/100;
 JtoS = [-20:10:30];
 int_bw = 100;  %ignored for CW
