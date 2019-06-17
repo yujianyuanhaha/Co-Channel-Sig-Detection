@@ -10,19 +10,29 @@ rand('seed',0);
 randn('seed',0);
 
 %====================Initial parameters=====================%
+
+
+isTimeOffset = 0
+isPhaseOffset = 0
+isFreqOffset = 1
+
+allInts = {'NONE','CW','CHIRP'};
+intParams.type = 'CW';   %'NONE'
+
+
 N = 1e5;
 bitsPerSym = 1;
 fd = 100e3;  %symbol rate
 sps = 4;  %samples per symbol
 fs = fd*sps; %sample rate
 chan = 'AWGN';
-allInts = {'NONE','CW','CHIRP'};
-intParams.type = 'CHIRP';   %'NONE'
+
+
 intParams.fc = fd/100;
 intParams.BW = fs;
 intParams.SweepRate = 500e3;  %sweep rate for chirps (Hz/sec)
 intParams.duty = 1.0;  %duty cycle for interference
-JtoS = -10:5:40;
+JtoS = -10:5:10;
 int_bw = 100;  %ignored for CW
 EbNo = 10;
 eBW = 0.25;
@@ -31,10 +41,10 @@ beta  = 0.25;
 
 %===============mitigation method======================%
 
-allMethods = {'FFT-Thresh','DWT','FFT-Thresh2','FRESH','TimeDomainCancel','NotchFilter','CMA'};
+allMethods = {'FFT-Thresh','FFT-Thresh2','FRESH','CMA'};
 
 
-for jj=1:2
+for jj=1:4
     close all
     
     
@@ -72,39 +82,52 @@ for jj=1:2
         % add interference
         int = addInterf(sig, JtoS(ii), intParams, fs);  %send it sig so we calculate J/S vs signal power, not signal + noise power
         r = rChan  + int;
-        r = r.*exp(-1j*2*pi*rand);
+        
+        if isPhaseOffset
+            r = r.*exp(-1j*2*pi*0.2);  % fixed as start
+            %             r = r.*exp(-1j*2*pi*rand);
+        end
+        
+        if isFreqOffset
+            f_fo = 5000;
+            r = r.* exp(-1j*2*pi*0.2*[1:length(r)]/f_fo);
+        end
+        
         
         %% add random timing offset
         %     offset = floor(rand*sps*Ns)
-        offset = 0
-        %  offset = floor(0.5*sps*Ns)
-        r = [r(offset+1:end), zeros(1,offset)];
+        if isTimeOffset
+            offset = floor(0.5*sps*Ns)  % fixed as start, random later
+            r = [r(offset+1:end), zeros(1,offset)];
+        else
+            offset = 0
+        end
         
         %=============Mitigation Part ========================%
         if(strcmp(method,'FFT-Thresh'))  %MA: I modified this to operate on windows of data
             
             
-                    Nfft = 4096;
-                    nBlks = floor(length(r)/Nfft);
-                    rClean = zeros(1,Nfft*nBlks);
-                    for i=1:nBlks
-                       % calculate the appropriate threshold
-                       threshold = calculate_threshold(r((i-1)*Nfft+1:i*Nfft));
-            %             apply the threshold for nonlinear NBI mitigation
-                       rClean((i-1)*Nfft+1:i*Nfft) = FreqDomainCancel(r((i-1)*Nfft+1:i*Nfft), threshold);
-                    end
+            Nfft = 4096;
+            nBlks = floor(length(r)/Nfft);
+            rClean = zeros(1,Nfft*nBlks);
+            for i=1:nBlks
+                % calculate the appropriate threshold
+                threshold = calculate_threshold(r((i-1)*Nfft+1:i*Nfft));
+                %             apply the threshold for nonlinear NBI mitigation
+                rClean((i-1)*Nfft+1:i*Nfft) = FreqDomainCancel(r((i-1)*Nfft+1:i*Nfft), threshold);
+            end
             
         elseif(strcmp(method,'DWT'))
             % ========= DWT - discrete wavelet tranformation=========
             [cA,cD] = dwt(r,'sym4');
             
-            threshold = mad(cD)/0.6745*sqrt(2);            
+            threshold = mad(cD)/0.6745*sqrt(2);
             for kk = 1:length(cD)
                 if cD(kk) > threshold
                     cD(kk) = 0;
                 end
             end
-                        
+            
             nbi_hat = idwt(cA,cD,'sym4');  % level-1
             rClean = r - nbi_hat;
             
@@ -165,7 +188,7 @@ for jj=1:2
             %         MA: the unmitigated BER doesn't work because the demodDSSS function
             %         assumes that the signal was already downsampled to the chip rate
             %         and time aligned with the spreading sequence......
-            unMitBER(ii) = psk_demodDSSS(r, pn, Ns, N, bitsPerSym,eBW, bits, 5000)
+            %             unMitBER(ii) = psk_demodDSSS(r, pn, Ns, N, bitsPerSym,eBW, bits, 5000)
             MitBER(ii) = psk_demodDSSS(x_end3, pn, Ns, N, bitsPerSym,eBW, bits, 5000)
             
             %===================plot========================%
@@ -184,7 +207,15 @@ for jj=1:2
             DrawPSD({sig;rChan;r;sig_lms_dd},fs,{'Gold','Channel','Rx','Mitigated-lmsdd'},4096);
             DrawPSD({sig;rChan;r;sig_rls_dd},fs,{'Gold','Channel','Rx','Mitigated-rlsdd'},4096);
         else
+            if isFreqOffset
+                f_fo = 5000;
+                r = r.* exp(1j*2*pi*0.2*[1:length(r)]/f_fo);
+            end
             unMitBER(ii) = psk_demod(r, bitsPerSym, sps, eBW,bits,5000)
+            if isFreqOffset
+                f_fo = 5000;
+                rClean = rClean.* exp(1j*2*pi*0.2*[1:length(rClean)]/f_fo);
+            end
             MitBER(ii) = psk_demod(rClean, bitsPerSym, sps, eBW,bits,5000)
             
             %===================plot========================%
@@ -205,7 +236,7 @@ for jj=1:2
         %     legend('With Mitigation - LMS','With Mitigation - RLS')
         title(method)
         
-        figName = sprintf('2ber_%d2_off.png',methodInd);
+        %         figName = sprintf('ber_%d.png',methodInd);
         %     saveas(gcf,figName)
         
         
@@ -219,8 +250,8 @@ for jj=1:2
         legend('WIthout Mitigation','With Mitigation')
         title(method)
         
-        figName = sprintf('2ber_%d_timeOff.png',methodInd);
-        %     saveas(gcf,figName)
+        figName = sprintf('ber_%d_f.png',methodInd);
+        saveas(gcf,figName)
     end
     
 end

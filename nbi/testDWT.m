@@ -77,6 +77,7 @@ for k = 1:NN
     if strcmp(intType,'tone')
         nbi = sqrt(2)/(10^(SIRdB/10)) * ( cos([1:N*sps] * fi *pi) + 1j*sin([1:N*sps] * fi *pi)) ;
     else
+        % chirp
         f_s = 500/10000;
         f_t = 2000/10000;
         T = length(n);
@@ -88,20 +89,38 @@ for k = 1:NN
     
     x1  = x1 + n + nbi;                         % received noisy signal
     
-    % -- offset --
-    x1 = x1(1+timeOffset:end);
     
+    
+    
+    [cA,cD] = dwt(x1,'sym4');
+    
+    threshold = mad(cD)/0.6745*sqrt(2);
+    for kk = 1:length(cD)
+        if abs(cD(kk)) > threshold
+            cD(kk) = 0;
+        end
+    end
+    
+    nbi_hat = idwt(cA,cD,'sym4');  % level-1
+    x1Clean = x1 - nbi_hat;
+    
+    sb1 =  downsample(x1Clean,sps);
+    sb1  = sign(real(sb1));
+    
+    
+    
+    
+%     % -- offset --
+%     x1 = x1(1+timeOffset:end);
+%     
     x1 = downsample(x1,sps);
-    
+%     
 %     if length(x1) < N
 %         x1 = [x1, zeros(1,N-length(x1))];
 %     end
-    
-    threshold = calculate_threshold(x1);
-    % apply the threshold for nonlinear NBI mitigation
-    x_end = FreqDomainCancel(x1, threshold);
-    sb2 = x_end;
-    
+%     
+% 
+%     
 %     % ========== estimation using CMA =====================
 %     [c, X, e] = myCMA(N, L, EqD, x1, R2, mu);
 %     sym = c'* X;   % symbol estimation
@@ -121,9 +140,9 @@ for k = 1:NN
 %         sb1  = sign(real(sb1))+sqrt(-1)*sign(imag(sb1));  % QPSK detection
 %     end
 %     strt = L/2-1;
-%     sb2  = sb1-TxS(strt+1:strt+length(sb1));  % detecting error symbols
-%     
-    
+
+
+    sb2  = sb1-TxS;  % detecting error symbols       
     
     SER  = length(find(sb2~=0))/length(sb2);% SER calculations
     % disp(SER);
@@ -137,7 +156,11 @@ for k = 1:NN
     end
     sb2_null  = sb1_null-TxS;  % detecting error symbols
     SER2  = length(find(sb2_null~=0))/length(sb2_null);
-    SER2s = [SER2s , SER2];
+
+
+
+
+    SER2s = [SER2s , SER2]
     
 end
 SERs
@@ -152,4 +175,4 @@ grid on;
 title('BER over SNR of CMA - BPSK');
 xlabel('SNR');
 ylabel('BER');
-legend('CMA','null');
+legend('DWT','null');

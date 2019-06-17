@@ -35,19 +35,19 @@ sig_n_alpha = sig.*exp(-1j*2*pi*alpha.*t);
 
 for i=delay+1:length(sig)-delay
     if(0 && ~mod(i,Nfft))
-%         keyboard
+        %         keyboard
         r_fft = (fft(sig(i-Nfft+1:i)));
-%         figure
-%         plot(abs(r_fft));
+        %         figure
+        %         plot(abs(r_fft));
         idx = 1;
-%         R = zeros(1,8);
+        %         R = zeros(1,8);
         for k=floor(-3000/bin_size):round(1250/bin_size):ceil(3000/bin_size)
             bins2 = k:k+round(1250/bin_size);
             bins2(bins2 <= 0) = bins2(bins2 <= 0) + Nfft;
             bins2(bins2 > Nfft) = bins2(bins2 > Nfft) - Nfft;
-
+            
             R(idx) = 10*(r_fft(bins2)*r_fft(bins2)')/(Nfft^2);
-       
+            
             idx = idx + 1;
         end
         
@@ -64,45 +64,47 @@ for i=delay+1:length(sig)-delay
     y2 = sig_alpha(i-delay:i+delay)*conj(w(taps+1:2*taps));
     y3 = sig_n_alpha(i-delay:i+delay)*conj(w(2*taps+1:end));
     y(i) = y1+y2+y3;
-%     Rnum = (1-beta2)*Rnum + beta2*abs(SOI(i))^4;%*(amp_scale)^4;
-%     R2 = (1-beta3)*R2 + beta3*abs(SOI(i))^2;%*(amp_scale)^2;
+    %     Rnum = (1-beta2)*Rnum + beta2*abs(SOI(i))^4;%*(amp_scale)^4;
+    %     R2 = (1-beta3)*R2 + beta3*abs(SOI(i))^2;%*(amp_scale)^2;
     
-%     R2 = Rden;
+    %     R2 = Rden;
     R_hist(i) = R2;
-%     if(R2 < .01)
-%         R2 = .01;
-%     end
+    %     if(R2 < .01)
+    %         R2 = .01;
+    %     end
     e = y(i)*(R2-abs(y(i))^2);  %use CMA to adapt
-%     e = -y(i) + SOI(i);  %cheat, use truth to adapt
+    %     e = -y(i) + SOI(i);  %cheat, use truth to adapt
     abs_u = 3*norm(sig(i-delay:i+delay));
     w = w + (mu_t/(delta + abs_u^2))*[sig(i-delay:i+delay) sig_alpha(i-delay:i+delay)  sig_n_alpha(i-delay:i+delay)].'*conj(e);
-%     w_hist(:,i) = w;    
-%     w = w + mu*sig(i-delay:i+delay).'*conj(e);
+    %     w_hist(:,i) = w;
+    %     w = w + mu*sig(i-delay:i+delay).'*conj(e);
     
 end
 
 % align_and_plot(SOI,y,1);
 
 r_out = y;%(delay+1:end);
+
+end
 % r_out = sig(1:length(r_out))-r_out;
-figure(24)
-freqz(flipud(conj(w(1:taps))),1,1024,'whole',fs)
-title('Zero shift filter')
-
-figure(25)
-freqz(flipud(conj(w(taps+1:2*taps))),1,1024,'whole',fs)
-title('Plus Shift Filter')
-
-figure(26)
-freqz(flipud(conj(w(2*taps+1:end))),1,1024,'whole',fs)
-title('Negative Shift Filter')
-
-% figure(27)
-% plot(real(w_hist).');
-
-figure(28)
-plot(abs(y))
-title('Output Magnitude');
+% figure(24)
+% freqz(flipud(conj(w(1:taps))),1,1024,'whole',fs)
+% title('Zero shift filter')
+%
+% figure(25)
+% freqz(flipud(conj(w(taps+1:2*taps))),1,1024,'whole',fs)
+% title('Plus Shift Filter')
+%
+% figure(26)
+% freqz(flipud(conj(w(2*taps+1:end))),1,1024,'whole',fs)
+% title('Negative Shift Filter')
+%
+% % figure(27)
+% % plot(real(w_hist).');
+%
+% figure(28)
+% plot(abs(y))
+% title('Output Magnitude');
 
 
 
